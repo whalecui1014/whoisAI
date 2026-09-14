@@ -21,13 +21,14 @@ export const LANDING_COPY = {
 }
 
 export const POST = {
-  title: '和朋友旅行，有人把五天行程排到小时，我想随性一点，该提前说吗？',
-  tag: '朋友旅行',
-  sourceType: '游戏示例',
-  sourceDescription: '为本局创作的游戏示例，不对应真实作者、赞同数或原帖链接',
-  excerpt: '下个月我和三位朋友去旅行。有人已经做好五天攻略，景点、餐厅和交通都排到了具体时间。我看到清单就有点累，更想每天只定一两个地方，剩下的时间随走随停。现在提出会不会扫兴，还是到了再看情况？',
-  newCondition: '同行者说清单只是备选，不要求全部打卡；但其中两项活动已经付款，取消不退款。',
-  copyPrefix: '补充条件：同行者说清单只是备选，但其中两项活动取消不退款。我想问：',
+  title: '如何看待中国博士人数已经超过驴的存栏量？',
+  tag: '博士与驴',
+  sourceType: '知乎原帖',
+  sourceDescription: '根据知乎原回答压缩整理；原帖将在身份揭晓后开放',
+  sourceUrl: 'https://www.zhihu.com/question/2073986909198730674/answer/2076025734280254858',
+  excerpt: '有人发现，中国博士人数和驴的存栏量都在 120 万左右。原回答指出，博士总量上升不等于“太多”，中国博士占总人口的比例仍低于欧美；更明显的变化是，驴存栏从上世纪 90 年代的千万头级别降到了百万头级别。这个看似离谱的比较，究竟说明了什么？',
+  newCondition: '原回答补充：中国博士总数约 120 万，但占总人口比例低于欧美；驴存栏已从上世纪 90 年代的千万头级别降到约 120 万。',
+  copyPrefix: '补充资料：回答提到中国博士总数约 120 万，而驴存栏从千万头级别降到约 120 万。我想问：',
 }
 
 export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; task: string; hints: string[]; placeholder: string; lockedNext: string; publicTitle: string; publicDescription: string; publicNext: string }> = {
@@ -35,8 +36,8 @@ export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; ta
     kicker: '第一轮 · 全员装人机',
     title: '先把自己写得像 AI',
     task: '围绕这篇帖子，写一条刻意像 AI 的评论。',
-    hints: ['列出三项考虑因素', '给一个过分周全的方案', '像总结报告一样收尾'],
-    placeholder: '一本正经地给个建议……',
+    hints: ['综合评估……', '建议结合……', '从多个维度来看……'],
+    placeholder: '写一句有点“标准答案味”的话……',
     lockedNext: '查看四条评论',
     publicTitle: '四条“AI 味”评论已公开',
     publicDescription: '先看完四条，再猜哪一席真的由 AI 控制。',
@@ -46,8 +47,8 @@ export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; ta
     kicker: '第二轮 · 这次认真说',
     title: '你会怎么回复题主？',
     task: '如果这条评论真的留在帖子下面，你会说什么？',
-    hints: ['你更在意旅行节奏，还是同行感受？', '攻略已经有人做了，你会怎么回应？', '哪些行程想一起，哪些想留白？'],
-    placeholder: '写下你最在意的一点……',
+    hints: ['我在意的是……', '容易被忽略的是……', '如果是我，我会……'],
+    placeholder: '把你真正想说的话写下来……',
     lockedNext: '查看四条评论',
     publicTitle: '四条评论已公开',
     publicDescription: '这轮只看内容：哪一条最值得点赞？',
@@ -57,8 +58,8 @@ export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; ta
     kicker: '第三轮 · 这问题值得问',
     title: '还有什么没问清楚？',
     task: '根据新条件，只问一个可能改变你判断的问题。',
-    hints: ['先问清时间限制', '确认能否分开行动', '只追问一个关键条件'],
-    placeholder: '只问一个你最想确认的问题……',
+    hints: ['这个条件稳定吗？', '还有什么成本没算？', '如果情况变化呢？'],
+    placeholder: '写一个值得题主回应的问题……',
     lockedNext: '查看四个问题',
     publicTitle: '四个问题已公开',
     publicDescription: '先选一个最想让题主回答的问题，下一页再猜谁是 AI。',
@@ -69,22 +70,22 @@ export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; ta
 // 仅用于本地单人流程；真实多人对局不得复用这些席位内容。
 export const SCRIPTED_SUBMISSIONS: Record<RoundNumber, Record<SeatId, string>> = {
   1: {
-    A: '建议从同行关系、体力分配与时间成本三个维度综合评估，以实现旅行体验最优解。',
-    B: '五天行程已规划到小时，按计划执行能减少现场决策成本，避免团队效率下降。',
-    C: '可以采用“固定项目+自由时段”的混合方案，兼顾攻略成果与旅行弹性。',
-    D: '首先认可对方的攻略投入，其次说明节奏偏好，最后确认必须参加的项目。',
+    A: '我就在这里，不躲，不藏，不绕，不逃，稳稳地接住你',
+    B: '我用最直白，最不绕弯子，最一阵见血的方式告诉你，你毕不了业了',
+    C: '你的观察力太敏锐了!这是典型的顶级研究者才具备的批判性思维！',
+    D: '这不是你的能力不足，而是知识内卷与草料供给的结构性错配。',
   },
   2: {
-    A: '我会现在说。到了当地再临时改，做攻略的人反而更难受。',
-    B: '五天很短，我愿意先照计划走两天；如果太累，再留半天自己逛。',
-    C: '攻略可以参考，别变成全员打卡表。想慢一点也该提前说清楚。',
-    D: '先问哪些项目大家一定想一起去，其他时间分开行动也挺好。',
+    A: '这组数字确实好笑，但总量和占比是两回事，不能据此判断博士是不是太多。',
+    B: '比起博士变多，我更意外驴少了这么多。这个变化本身更值得追问。',
+    C: '把两个没关系的数字放在一起很抓眼球，但它更像一个话题入口，不是结论。',
+    D: '我会先确认两个“120 万”是不是同一年、同一口径，再讨论这个比较说明什么。',
   },
   3: {
-    A: '两项已付款的活动分别在什么时候？',
-    B: '如果有人不参加已付款的活动，费用怎么分？',
-    C: '除了那两项活动，大家能接受分开行动吗？',
-    D: '做攻略的朋友最希望大家保留的是哪一段行程？',
+    A: '博士人数和驴存栏的数据分别来自哪一年？',
+    B: '如果比较人口占比而不是总数，结论会发生什么变化？',
+    C: '驴存栏减少主要是需求下降，还是养殖周期太长？',
+    D: '提出这个比较，真正想讨论的是博士变多还是驴变少？',
   },
 }
 

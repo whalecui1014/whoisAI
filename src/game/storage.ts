@@ -1,7 +1,7 @@
 import { createGame } from './machine'
 import type { BallotType, GamePhase, GameState, OutfitId, RoundNumber, SeatId } from './types'
 
-export const STORAGE_KEY = 'who-is-ai-v2.4'
+export const STORAGE_KEY = 'who-is-ai-v2.5'
 
 const seats: SeatId[] = ['A', 'B', 'C', 'D']
 const outfits: OutfitId[] = ['blue', 'green', 'yellow', 'purple']

@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Clipboard, Clock3, Copy, Crown, Eye, FileText, Info, LockKeyhole, MessageCircle, RotateCcw, Sparkles, ThumbsUp, Trophy, Users, X } from 'lucide-react'
+import { Check, ChevronDown, Clipboard, Clock3, Copy, Crown, ExternalLink, Eye, FileText, Info, LockKeyhole, MessageCircle, RotateCcw, Sparkles, ThumbsUp, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useMemo, useReducer, useState } from 'react'
 import { Character } from './components/game/Character'
 import { DemoControls } from './components/game/DemoControls'
@@ -105,7 +105,7 @@ function Reading({ state, onNext }: { state: GameState; onNext: () => void }) {
   return <GamePage state={state} sidebar={<aside className="side-card rules-side"><span className="side-kicker">这局要做什么</span><ol><li><b>装人机</b><span>写得像 AI，再猜一次</span></li><li><b>认真说</b><span>写评论，选一条</span></li><li><b>值得问</b><span>提一个问题，最后猜 AI</span></li></ol><details><summary>展开计分规则 <ChevronDown size={15} /></summary><p>被真人误认最多 2 分；首轮猜中 2 分；评论与问题各最多 4 分；最终猜中 3 分。</p></details></aside>}>
     <article className="content-card reading-card" data-screen="reading">
       <span className="eyebrow">阅读阶段</span><h1>{POST.title}</h1>
-      <div className="answer-source"><div className="source-avatar">题</div><div><b>情境摘录</b><span>{POST.sourceDescription}</span></div></div>
+      <div className="answer-source"><div className="source-avatar">答</div><div><b>原回答要点</b><span>{POST.sourceDescription}</span></div></div>
       <blockquote>{POST.excerpt}</blockquote>
       <div className="reading-note"><LockKeyhole size={18} /><span>补充条件会在第三轮出现。</span></div>
       <PrimaryButton onClick={onNext}>开始第一轮</PrimaryButton>
@@ -123,7 +123,7 @@ function WritingScreen({ state, round, dispatch }: { state: GameState; round: Ro
   const count = countVisibleCharacters(draft)
   const locked = Boolean(state.submissions[round][state.userSeat])
   const error = !locked && draft.length > 0 ? validateSubmission(draft) : null
-  return <GamePage state={state} sidebar={<><SidePost showCondition={round === 3} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card hint-card"><span className="side-kicker">可以从这里想</span>{ROUND_COPY[round].hints.map(item => <span key={item}>{item}</span>)}<p>选一个方向就够了，不必面面俱到。</p></aside></>}>
+  return <GamePage state={state} sidebar={<><SidePost showCondition={round === 3} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card hint-card"><span className="side-kicker">起手提示</span>{ROUND_COPY[round].hints.map(item => <span key={item}>{item}</span>)}<p>提示只帮你起步，不会代写完整答案。</p></aside></>}>
     <section className="content-card writing-card" data-screen={`round-${round}-write`}>
       <RoundHeader round={round} />
       {round === 2 && <div className="tone-shift"><MessageCircle size={18} /><span><b>反串结束。</b>这轮只看评论本身。</span></div>}
@@ -187,7 +187,10 @@ function Reveal({ state, dispatch }: { state: GameState; dispatch: React.Dispatc
       <p className={`guess-result ${correct ? 'correct' : 'wrong'}`}>{correct ? '你猜对了，最终识破 +3 分。' : `你选了 ${guess}，这次没猜中。`}</p>
       <CharacterGrid state={state} large reveal />
       <p className="muted-copy">其他席位仍保持匿名。</p>
-      <PrimaryButton onClick={() => dispatch({ type: 'ADVANCE', from: state.phase })}>看积分和关系卡</PrimaryButton>
+      <div className="reveal-actions">
+        <a className="secondary-button source-link" href={POST.sourceUrl}>去知乎看原帖<ExternalLink size={16} /></a>
+        <PrimaryButton onClick={() => dispatch({ type: 'ADVANCE', from: state.phase })}>看积分和关系卡</PrimaryButton>
+      </div>
     </section>
   </GamePage>
 }

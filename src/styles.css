@@ -440,6 +440,8 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 .guess-result.wrong { color: #a04343; background: #fff0f0; }
 .reveal-card .character-grid { margin: 28px 0 20px; }
 .muted-copy { color: var(--muted); font-size: 13px; }
+.reveal-actions { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; }
+.reveal-actions .source-link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
 
 .settlement-page { width: 100%; padding-top: 0; }
 .settlement-page .content-card { margin-bottom: 14px; }
@@ -563,6 +565,8 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
   .settlement-hero svg { width: 34px; }
   .section-title { flex-direction: column; gap: 3px; }
   .final-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .reveal-actions { align-items: stretch; flex-direction: column; }
+  .reveal-actions > * { width: 100%; }
   .no-publish { justify-content: flex-start; }
   .relation-drawer { padding: 20px 16px; }
 }
