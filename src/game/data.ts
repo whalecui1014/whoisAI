@@ -10,7 +10,7 @@ export const OUTFITS: Record<OutfitId, { label: string; src: string; color: stri
 }
 
 export const LANDING_COPY = {
-  eyebrow: '三轮匿名评论游戏',
+  eyebrow: '3 位真人，1 个 AI',
   titleTop: '快来知乎',
   titleBottom: '找人机！',
   subtitle: '这次，真人也来装 AI。',
@@ -78,10 +78,10 @@ export const SCRIPTED_SUBMISSIONS: Record<RoundNumber, Record<SeatId, string>> =
 }
 
 export const VOTE_COPY: Record<BallotType, { title: string; subtitle: string; round: RoundNumber }> = {
-  round1Identity: { title: '谁是 AI？点选一位。', subtitle: '点选后不可更改。', round: 1 },
-  round2Quality: { title: '哪条评论最值得点赞？', subtitle: '点选后不可更改。', round: 2 },
-  round3Quality: { title: '哪个问题最值得回应？', subtitle: '点选后不可更改。', round: 3 },
-  finalIdentity: { title: '最后一次，你觉得谁是 AI？', subtitle: '点选后不可更改。', round: 3 },
+  round1Identity: { title: '第一轮，你觉得谁是 AI？', subtitle: '看看大家写的，点选你怀疑的那个人。', round: 1 },
+  round2Quality: { title: '哪条评论最值得你点赞？', subtitle: '喜欢哪条就点哪条，这轮不猜 AI。', round: 2 },
+  round3Quality: { title: '你最想让题主回答哪个问题？', subtitle: '点选你最想让题主回答的问题。投票结束后，再猜谁是 AI。', round: 3 },
+  finalIdentity: { title: '最后一次，你觉得谁是 AI？', subtitle: '点选你认为是 AI 的那个人。倒计时结束后统一揭晓。', round: 3 },
 }
 
 export const SAMPLE_SCRIPTED_BALLOTS: Record<BallotType, Record<SeatId, SeatId>> = {
@@ -107,7 +107,7 @@ export const PHASE_SECONDS: Record<GamePhase, number> = {
 }
 
 export const PHASE_LABELS: Record<GamePhase, string> = {
-  landing: '活动首页', lobby: '对局准备', reading: '阅读帖子', round1Write: '第一轮写作', round1Vote: '第一轮猜 AI', round2Write: '第二轮写作', round2Vote: '第二轮选评论', round3Write: '第三轮提问', round3QualityVote: '第三轮选问题', finalIdentityVote: '最终猜 AI', reveal: '身份揭晓', settlement: '本局结算',
+  landing: '活动首页', lobby: '准备开局', reading: '看看这道题', round1Write: '第一轮 · 装人机', round1Vote: '第一轮猜 AI', round2Write: '第二轮 · 写评论', round2Vote: '第二轮选评论', round3Write: '第三轮 · 提问题', round3QualityVote: '第三轮选问题', finalIdentityVote: '最终猜 AI', reveal: '身份揭晓', settlement: '本局结算',
 }
 
 export const PHASE_ORDER: GamePhase[] = ['lobby', 'reading', 'round1Write', 'round1Vote', 'round2Write', 'round2Vote', 'round3Write', 'round3QualityVote', 'finalIdentityVote', 'reveal', 'settlement']

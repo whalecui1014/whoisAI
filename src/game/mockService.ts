@@ -22,7 +22,7 @@ export function createLocalVoteService(options: LocalVoteServiceOptions = {}) {
 
   return {
     async submitVote(request: VoteRequest): Promise<VoteReceipt> {
-      if (request.voter === request.target) throw new Error('不能给自己的席位投票。')
+      if (request.voter === request.target) throw new Error('不能投自己哦。')
 
       const key = `${request.gameId}:${request.ballot}:${request.voter}`
       const attempt = (attempts.get(key) ?? 0) + 1
@@ -30,7 +30,7 @@ export function createLocalVoteService(options: LocalVoteServiceOptions = {}) {
       if (options.latencyMs !== 0) {
         await new Promise(resolve => window.setTimeout(resolve, options.latencyMs ?? 180))
       }
-      if (options.shouldFail?.(request, attempt)) throw new Error('投票没有提交成功，请重试。')
+      if (options.shouldFail?.(request, attempt)) throw new Error('没投成功，请重试。')
 
       const existing = receipts.get(key)
       if (existing) {

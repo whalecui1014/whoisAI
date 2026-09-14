@@ -86,7 +86,7 @@ function requiredActionComplete(state: GameState): boolean {
 
 function missingActionMessage(state: GameState): string {
   if (state.phase === 'round1Write' || state.phase === 'round2Write' || state.phase === 'round3Write') return '请先提交本轮内容。'
-  if (state.phase === 'round1Vote' || state.phase === 'round2Vote' || state.phase === 'round3QualityVote' || state.phase === 'finalIdentityVote') return '请先完成本轮投票。'
+  if (state.phase === 'round1Vote' || state.phase === 'round2Vote' || state.phase === 'round3QualityVote' || state.phase === 'finalIdentityVote') return '请先投票。'
   return '请先完成当前操作。'
 }
 
@@ -105,8 +105,8 @@ function expirePhase(state: GameState): GameState {
   if (state.phase === 'landing' || state.phase === 'lobby' || state.phase === 'settlement') return state
   if (state.phase === 'reveal') return { ...state, secondsLeft: 0 }
   if (requiredActionComplete(state)) return move(state, nextPhase(state.phase))
-  if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '还没有完成当前操作，再给你 10 秒。' }
-  return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '10 秒结束时仍未提交或投票，本局不计分，也不会生成关系卡。', phase: 'settlement', settled: true }
+  if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '还有人没完成，再等 10 秒。' }
+  return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '加时结束后，仍有人没完成提交或投票，这局不计分。', phase: 'settlement', settled: true }
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -124,7 +124,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
     case 'CAST_VOTE': {
       if (state.phase !== phaseByBallot[action.ballot]) return state
-      if (action.seat === state.userSeat) return { ...state, notice: '不能给自己的席位投票。' }
+      if (action.seat === state.userSeat) return { ...state, notice: '不能投自己哦。' }
       if (state.ballots[action.ballot][state.userSeat]) return state
       return { ...state, ballots: { ...state.ballots, [action.ballot]: { ...state.ballots[action.ballot], [state.userSeat]: action.seat } }, notice: undefined }
     }

@@ -8,7 +8,7 @@ export function countVisibleCharacters(value: string): number {
 }
 
 export function validateSubmission(value: string): string | null {
-  if (!value.trim()) return '内容不能为空，请写下你的想法。'
-  if (countVisibleCharacters(value) > 50) return '超过 50 个字，请修改后再提交。'
+  if (!value.trim()) return '先写点什么再提交吧。'
+  if (countVisibleCharacters(value) > 50) return '超过 50 字了，删短一点再提交。'
   return null
 }

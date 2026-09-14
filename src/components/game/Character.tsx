@@ -15,7 +15,7 @@ export function Character({ seat, outfit, size = 'medium', selected, current, re
   return (
     <div className={`character character-${size} character-outfit-${outfit} ${selected ? 'is-selected' : ''} ${revealedAi ? 'is-ai-revealed' : ''}`} style={{ '--seat-color': item.color } as React.CSSProperties}>
       <div className="character-image-wrap">
-        <img src={item.src} alt={`席位 ${seat}，${item.label}刘看山`} />
+        <img src={item.src} alt={`玩家 ${seat}，穿${item.label}的刘看山`} />
         {revealedAi && <span className="ai-reveal-badge">AI</span>}
       </div>
       <div className="character-label"><strong>{seat}</strong><span>{current ? '你 · ' : ''}{item.label}</span></div>

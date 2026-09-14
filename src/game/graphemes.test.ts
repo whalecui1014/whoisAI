@@ -13,7 +13,7 @@ describe('visible-character validation', () => {
   })
 
   it('rejects whitespace-only input', () => {
-    expect(validateSubmission('  \n\t')).toContain('不能为空')
+    expect(validateSubmission('  \n\t')).toContain('先写点什么')
   })
 
   it('counts a family emoji as one visible character', () => {

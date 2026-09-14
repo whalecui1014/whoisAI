@@ -321,6 +321,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 .game-header nav button { display: inline-flex; align-items: center; gap: 5px; border: 0; padding: 7px 0; color: #5c667a; background: transparent; cursor: pointer; }
 .game-header nav button:hover { color: var(--blue); }
 .current-stage { color: var(--muted); font-size: 13px; }
+.stage-timer { border-left: 1px solid #dfe3e9; padding-left: 16px; color: var(--blue); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .landing-page { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 64px; }
 .hero-section { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,1fr) minmax(440px,.9fr); align-items: center; min-height: 520px; padding: 56px 56px 44px; border: 1px solid #e7eaf0; border-radius: 10px; background: #fff; box-shadow: 0 8px 30px rgba(18,18,18,.06); }
@@ -400,8 +401,6 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 .reading-card blockquote { margin: 0; padding: 18px 20px; border-left: 3px solid #dfe3e9; color: #3d4655; background: #fafbfc; }
 .reading-note { display: flex; align-items: center; gap: 9px; margin: 20px 0; color: #68748a; font-size: 13px; }
 .reading-note svg { color: var(--blue); }
-.auto-stage-note { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 12px 14px; border-radius: 4px; color: #566177; background: #f6f7f9; font-size: 13px; }
-.auto-stage-note svg { color: var(--blue); }
 
 .round-heading > p { margin: 9px 0 0; color: #5c667a; }
 .tone-shift { display: flex; align-items: center; gap: 9px; margin-top: 20px; padding: 12px 14px; border-radius: 4px; color: #345a49; background: #f1faf5; }
@@ -437,6 +436,8 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 .vote-chip.pending { color: #386daf; background: #eaf3ff; }
 .vote-reminder > div { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: #68748a; font-size: 12px; }
 .vote-status { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 12px 14px; border: 1px solid #dfe3e9; border-radius: 4px; color: #566177; background: #fafbfc; font-size: 13px; }
+.vote-status > div strong, .vote-status > div span { display: block; }
+.vote-status > div span { margin-top: 2px; font-size: 12px; }
 .vote-status.success { color: #226648; border-color: #bce3d2; background: #f4fbf7; }
 .vote-status.error { color: #a04343; border-color: #f0caca; background: #fff6f6; }
 .final-review-card { min-height: 310px; }
@@ -541,6 +542,7 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 @media (max-width: 640px) {
   .game-header-inner, .landing-page { width: calc(100% - 24px); }
   .event-pill, .current-stage, .brand-group > i { display: none; }
+  .stage-timer { border-left: 0; padding-left: 0; font-size: 11px; }
   .brand-group img { width: 56px; }
   .brand-group > strong { font-size: 14px; }
   .game-header nav { gap: 9px; }

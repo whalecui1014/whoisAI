@@ -20,6 +20,6 @@ describe('local vote service', () => {
 
   it('rejects self-voting', async () => {
     const service = createLocalVoteService({ latencyMs: 0 })
-    await expect(service.submitVote({ ...request, target: 'A' })).rejects.toThrow('不能给自己')
+    await expect(service.submitVote({ ...request, target: 'A' })).rejects.toThrow('不能投自己')
   })
 })
