@@ -49,8 +49,8 @@ export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; ta
   3: {
     kicker: '第三轮 · 这问题值得问',
     title: '还有什么没问清楚？',
-    task: '根据新条件，只问一个可能改变你判断的问题。',
-    hints: ['这个条件稳定吗？', '还有什么成本没算？', '如果情况变化呢？'],
+    task: '结合本局情景，提出一个有创意、值得题主回答的问题。',
+    hints: ['哪个细节最让你好奇？', '换个角度会怎样？', '什么答案会出乎意料？'],
     placeholder: '写一个值得题主回应的问题……',
   },
 }

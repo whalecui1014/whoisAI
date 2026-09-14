@@ -1,17 +1,119 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-14T11:57:11.358Z",
+  "generatedAt": "2026-09-14T13:05:57.942Z",
   "posts": [
     {
-      "id": "zhihu-answer-2039374868626551439",
-      "title": "你见过哪些逗逼的评论/神回复? - 知乎",
-      "text": "有个妈妈在网上问，她要求自己15岁的女儿要每天负责一日三餐，为啥很多人都觉得不合适？\n然后下面有一段回复：\"你要求一个十几岁的孩子会煮个面，炒个家常菜，很正常，但你要求她一个人负责一日三餐所有饭菜，就有点苛刻了，因为毕竟她只是孩子。\n\"看到这里，我觉得是很普通的回复， 直到看见最后一句，堪称神回复：\"而且，你要说清楚，是因为她十五岁，所以要做菜，还是因为她是女孩，所以要做菜?\"",
+      "id": "zhihu-answer-2061399988953994856",
+      "title": "下雨天里做哪些小事会让人觉得格外治愈？",
+      "text": "1、窝在自家的书房里，听着噼里啪啦的雨声，坐在窗边的沙发上一边品茶一边看书，偶尔看看窗外的风景。 2、撑着雨伞，打着赤脚，漫步在乡间小路上，顺便摘一把野菊花。 3、在农村的院子里，靠在竹椅上，轻悠悠地摇着芭蕉扇，时而闭目，时而看看雨水，茶几上播放着喜欢的轻音乐。",
       "textKind": "excerpt",
-      "sourceUrl": "https://www.zhihu.com/question/31185891/answer/2039374868626551439?utm_medium=openapi_platform&utm_source=cf621feb3f2d",
-      "author": "jessica",
-      "commentCount": 81,
-      "voteCount": 352,
-      "readingSeconds": 41,
+      "sourceUrl": "https://www.zhihu.com/question/2043495592102454009/answer/2061399988953994856",
+      "author": null,
+      "commentCount": null,
+      "voteCount": null,
+      "readingSeconds": 30,
+      "category": "knowledge",
+      "selection": {
+        "ruleVersion": "short-light-v1",
+        "mode": "rules",
+        "reason": "通过简化规则：短文本、有观点/知识/故事特征，未命中排除项；未经语义核验"
+      }
+    },
+    {
+      "id": "zhihu-answer-2052743981692352403",
+      "title": "下雨天里做哪些小事会让人觉得格外治愈？",
+      "text": "独处听歌，或者独处听听雨吧，其实做什么觉得治愈跟随处境或心境不一样而变化吧，现在的我因为带娃，极少有独处时间，所以独处对我来说最治愈。",
+      "textKind": "excerpt",
+      "sourceUrl": "https://www.zhihu.com/question/2043495592102454009/answer/2052743981692352403",
+      "author": null,
+      "commentCount": null,
+      "voteCount": null,
+      "readingSeconds": 18,
+      "category": "opinion",
+      "selection": {
+        "ruleVersion": "short-light-v1",
+        "mode": "rules",
+        "reason": "通过简化规则：短文本、有观点/知识/故事特征，未命中排除项；未经语义核验"
+      }
+    },
+    {
+      "id": "zhihu-answer-2019445662828222404",
+      "title": "日常生活中我们可以做哪些小事来保护环境？",
+      "text": "减少一次性用品使用，践行垃圾分类，节约水电，绿色出行，参与环保行动。",
+      "textKind": "excerpt",
+      "sourceUrl": "https://www.zhihu.com/question/2019329500119324201/answer/2019445662828222404",
+      "author": null,
+      "commentCount": null,
+      "voteCount": null,
+      "readingSeconds": 11,
+      "category": "knowledge",
+      "selection": {
+        "ruleVersion": "short-light-v1",
+        "mode": "rules",
+        "reason": "通过简化规则：短文本、有观点/知识/故事特征，未命中排除项；未经语义核验"
+      }
+    },
+    {
+      "id": "zhihu-answer-2052834605351412601",
+      "title": "把事情变得简单，是不是一种能力？",
+      "text": "能看清世事纷扰是本事，但能在看清后依然保持简单才是大智慧。它让你不再为不属于你的复杂，消耗你本该用来活着的那点光。",
+      "textKind": "excerpt",
+      "sourceUrl": "https://www.zhihu.com/question/2033568900068160670/answer/2052834605351412601",
+      "author": null,
+      "commentCount": null,
+      "voteCount": null,
+      "readingSeconds": 15,
+      "category": "opinion",
+      "selection": {
+        "ruleVersion": "short-light-v1",
+        "mode": "rules",
+        "reason": "通过简化规则：短文本、有观点/知识/故事特征，未命中排除项；未经语义核验"
+      }
+    },
+    {
+      "id": "zhihu-answer-2082759128213086560",
+      "title": "知识越多越清醒，还是知识越多越内耗？",
+      "text": "知识越多，既是清醒，也是内耗——区别在于你是否把知识用来「理解」还是用来「审判」。用来理解（自己、他人、世界），知识就是清醒的灯。用来审判（自己不够好、别人太蠢、世界不该这样），知识就是内耗的刀。清醒的人用知识照路，内耗的人用知识照镜子——越照越觉得自己哪儿都不对。所以关键不是知识多少，而是你拿它当工具，还是当法官。",
+      "textKind": "excerpt",
+      "sourceUrl": "https://www.zhihu.com/question/2075580553663878986/answer/2082759128213086560",
+      "author": null,
+      "commentCount": null,
+      "voteCount": null,
+      "readingSeconds": 36,
+      "category": "opinion",
+      "selection": {
+        "ruleVersion": "short-light-v1",
+        "mode": "rules",
+        "reason": "通过简化规则：短文本、有观点/知识/故事特征，未命中排除项；未经语义核验"
+      }
+    },
+    {
+      "id": "zhihu-answer-2081198499341808930",
+      "title": "知识越多越清醒，还是知识越多越内耗？",
+      "text": "人经历的事越多，内心反而越清醒。不是事事都要争个输赢，慢慢懂得取舍，接纳遗憾。不再强求所有人理解自己，守住本心。看淡得失，稳住情绪，好好善待自己。人生不必样样完美，稳住心态，日子自然过得舒心安稳。",
+      "textKind": "excerpt",
+      "sourceUrl": "https://www.zhihu.com/question/2075580553663878986/answer/2081198499341808930",
+      "author": null,
+      "commentCount": null,
+      "voteCount": null,
+      "readingSeconds": 24,
+      "category": "opinion",
+      "selection": {
+        "ruleVersion": "short-light-v1",
+        "mode": "rules",
+        "reason": "通过简化规则：短文本、有观点/知识/故事特征，未命中排除项；未经语义核验"
+      }
+    },
+    {
+      "id": "zhihu-answer-2077996681942021909",
+      "title": "知识越多越清醒，还是知识越多越内耗？",
+      "text": "知识本身不会带来内耗，内耗源于想得多却做得少。懂得越多，看清现实与理想的差距，容易思虑过重陷入纠结，便会内耗。但知识也能帮人看透本质，学会接纳取舍。真正的清醒，是学识搭配行动，看清世界之后，依旧踏实过日子，而不是困在想法里反复挣扎。",
+      "textKind": "excerpt",
+      "sourceUrl": "https://www.zhihu.com/question/2075580553663878986/answer/2077996681942021909",
+      "author": null,
+      "commentCount": null,
+      "voteCount": null,
+      "readingSeconds": 27,
       "category": "opinion",
       "selection": {
         "ruleVersion": "short-light-v1",

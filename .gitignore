@@ -8,3 +8,6 @@ vite.config.js
 vite.config.d.ts
 outputs/zhihu-question-detail-preview.png
 skills-lock.json
+.env
+.env.local
+.env.*.local

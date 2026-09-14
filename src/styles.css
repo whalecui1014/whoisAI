@@ -382,6 +382,12 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 .solo-notice svg { flex: 0 0 auto; color: var(--blue); }
 .solo-notice strong, .solo-notice span { display: block; }
 .solo-notice span { margin-top: 2px; color: #68748a; font-size: 13px; }
+.ai-prep { display: flex; align-items: flex-start; gap: 11px; margin: -8px 0 20px; padding: 14px 16px; border: 1px solid #dce8fb; border-radius: 8px; color: #245a9a; background: #f7faff; }
+.ai-prep > div { display: grid; flex: 1; gap: 3px; }
+.ai-prep span { color: #65758b; font-size: 13px; line-height: 1.5; }
+.ai-prep.ready { border-color: #cfe8dc; color: #24734d; background: #f6fcf8; }
+.ai-prep.error { border-color: #f0d3d0; color: #a33b32; background: #fff8f7; }
+.ai-prep button { align-self: center; border: 0; color: var(--blue); background: transparent; cursor: pointer; font-weight: 650; }
 
 .post-side-card h3 { margin: 0 0 8px; font-size: 15px; line-height: 1.55; }
 .post-side-card > p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 5; }

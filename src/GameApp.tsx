@@ -1,9 +1,10 @@
 import { Check, ChevronDown, Clipboard, Clock3, Copy, Crown, ExternalLink, Eye, FileText, Info, LockKeyhole, MessageCircle, RotateCcw, Sparkles, Trophy, Users, X } from 'lucide-react'
-import { useEffect, useMemo, useReducer, useState } from 'react'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { Character } from './components/game/Character'
 import { DemoControls } from './components/game/DemoControls'
 import { GameHeader } from './components/game/GameHeader'
-import { LANDING_COPY, PHASE_ORDER, POST, ROUND_COPY, SEATS, VOTE_COPY } from './game/data'
+import { LANDING_COPY, PHASE_ORDER, ROUND_COPY, SEATS, VOTE_COPY } from './game/data'
+import { generateGameContent } from './game/ai'
 import { countVisibleCharacters, validateSubmission } from './game/graphemes'
 import { completeBallots, gameReducer } from './game/machine'
 import { localVoteService } from './game/mockService'
@@ -74,28 +75,35 @@ function StageProgress({ phase }: { phase: GamePhase }) {
   </div>
 }
 
-function Lobby({ state, onReady }: { state: GameState; onReady: () => void }) {
+function Lobby({ state, onReady, onRetry }: { state: GameState; onReady: () => void; onRetry: () => void }) {
   return <GamePage state={state} sidebar={<LobbyAside state={state} />}>
     <section className="content-card lobby-card" data-screen="lobby">
       <span className="eyebrow">开局前</span><h1>认一下你的角色</h1>
       <p className="lead">记住你的字母和衣服，这局不会变。最后揭晓谁是 AI。</p>
       <CharacterGrid state={state} large />
-      <div className="solo-notice"><Users size={20} /><div><strong>你是 {state.userSeat}</strong><span>这是单人试玩，其他三位的发言都是预先写好的，不是在线玩家。</span></div></div>
-      <PrimaryButton onClick={onReady}>开始读题</PrimaryButton>
+      <div className="solo-notice"><Users size={20} /><div><strong>本局席位说明</strong><span>你控制席位 {state.userSeat}。两个模拟真人席位使用预设内容；隐藏 AI 席位的三轮内容会由模型根据本题生成。</span></div></div>
+      <div className={`ai-prep ${state.aiContentStatus}`}>
+        <Sparkles size={18} />
+        <div><strong>{state.aiContentStatus === 'ready' ? 'AI 内容准备完成' : state.aiContentStatus === 'error' ? 'AI 内容生成失败' : '正在准备本局 AI 内容'}</strong>
+          <span>{state.aiContentStatus === 'ready' ? '三轮评论与第三轮新情景均已绑定当前题干。' : state.aiContentStatus === 'error' ? state.aiContentError : '正在根据初始题干生成，请稍候……'}</span>
+        </div>
+        {state.aiContentStatus === 'error' && <button onClick={onRetry}>重试</button>}
+      </div>
+      <PrimaryButton onClick={onReady} disabled={state.aiContentStatus !== 'ready'}>{state.aiContentStatus === 'ready' ? '准备好了' : '等待 AI 内容'}</PrimaryButton>
     </section>
   </GamePage>
 }
 
 function LobbyAside({ state }: { state: GameState }) {
-  return <><SidePost post={state.post} /><aside className="side-card"><span className="side-kicker">本局编号</span><strong className="mono">{state.gameId}</strong><p>角色身份为本局预设数据，不代表在线用户或真实模型调用。</p></aside></>
+  return <><SidePost post={state.post} scenario={state.scenario} /><aside className="side-card"><span className="side-kicker">本局编号</span><strong className="mono">{state.gameId}</strong><p>隐藏 AI 的内容由已配置模型生成；另外两席仍是单人 Demo 的模拟玩家。</p></aside></>
 }
 
 function PostSource({ post }: { post: InitialPost }) {
-  return <div className="answer-source"><div className="source-avatar">答</div><div><b>{postSourceLabel(post)}</b>{post.sourceUrl ? <><span>{post.author ?? '作者未提供'}{post.commentCount !== null ? ` · ${post.commentCount} 条评论` : ''}{post.voteCount !== null ? ` · ${post.voteCount} 赞同` : ''}</span><a href={post.sourceUrl} target="_blank" rel="noopener noreferrer">查看知乎原回答 ↗</a><span>当前展示文本预计 {post.readingSeconds} 秒读完{post.textKind === 'excerpt' ? ' · 摘录不代表原回答全文' : ''}</span></> : <span>本局原创情境内容，不对应真实作者、赞同数或原帖链接</span>}</div></div>
+  return <div className="answer-source"><div className="source-avatar">答</div><div><b>{postSourceLabel(post)}</b><span>{post.author ?? '作者未提供'}{post.commentCount !== null ? ` · ${post.commentCount} 条评论` : ''}{post.voteCount !== null ? ` · ${post.voteCount} 赞同` : ''}</span><a href={post.sourceUrl} target="_blank" rel="noopener noreferrer">查看知乎原回答 ↗</a><span>当前展示文本预计 {post.readingSeconds} 秒读完{post.textKind === 'excerpt' ? ' · 摘录不代表原回答全文' : ''}</span></div></div>
 }
 
-function SidePost({ post, showCondition = false }: { post: InitialPost; showCondition?: boolean }) {
-  return <aside className="side-card post-side-card"><span className="side-kicker">本局帖子</span><h3>{post.title}</h3><p>{post.text}</p><div className="source-chip"><FileText size={14} />{postSourceLabel(post)}</div>{showCondition && <div className="condition-mini"><b>游戏假设</b>{POST.newCondition}</div>}</aside>
+function SidePost({ post, scenario, showCondition = false }: { post: InitialPost; scenario: string; showCondition?: boolean }) {
+  return <aside className="side-card post-side-card"><span className="side-kicker">本局帖子</span><h3>{post.title}</h3><p>{post.text}</p><div className="source-chip"><FileText size={14} />{postSourceLabel(post)}</div>{showCondition && <div className="condition-mini"><b>本局情景</b>{scenario}</div>}</aside>
 }
 
 function PublishedHistory({ state, through }: { state: GameState; through: number }) {
@@ -129,11 +137,11 @@ function WritingScreen({ state, round, dispatch }: { state: GameState; round: Ro
   const count = countVisibleCharacters(draft)
   const locked = Boolean(state.submissions[round][state.userSeat])
   const error = !locked && draft.length > 0 ? validateSubmission(draft) : null
-  return <GamePage state={state} sidebar={<><SidePost post={state.post} showCondition={round === 3} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card hint-card"><span className="side-kicker">不知道怎么写？</span>{ROUND_COPY[round].hints.map(item => <span key={item}>{item}</span>)}</aside></>}>
+  return <GamePage state={state} sidebar={<><SidePost post={state.post} scenario={state.scenario} showCondition={round === 3} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card hint-card"><span className="side-kicker">不知道怎么写？</span>{ROUND_COPY[round].hints.map(item => <span key={item}>{item}</span>)}</aside></>}>
     <section className="content-card writing-card" data-screen={`round-${round}-write`}>
       <RoundHeader round={round} />
       {round === 2 && <div className="tone-shift"><MessageCircle size={18} /><span><b>反串结束。</b>这轮只看评论本身。</span></div>}
-      {round === 3 && <div className="new-condition"><span>补充条件</span><strong>{POST.newCondition}</strong><p>这是本局补充情境。</p></div>}
+      {round === 3 && <div className="new-condition"><span>补充条件</span><strong>{state.scenario}</strong><p>这是本局补充情境。</p></div>}
       <label className={`composer ${error ? 'has-error' : ''} ${locked ? 'locked' : ''}`}>
         <textarea value={draft} disabled={locked} onChange={event => dispatch({ type: 'DRAFT', round, value: event.target.value })} placeholder={ROUND_COPY[round].placeholder} />
         <span className={count > 50 ? 'over' : ''}>{count}/50</span>
@@ -179,7 +187,7 @@ function VoteScreen({ state, ballot, dispatch }: { state: GameState; ballot: Bal
     }
   }
 
-  return <GamePage state={state} sidebar={<><SidePost post={state.post} showCondition={meta.round === 3} />{!finalReview && <PublishedHistory state={state} through={meta.round - 1} />}<aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />点选就投票，投出后不能改</div><div><Users size={15} />不能投自己</div></aside></>}>
+  return <GamePage state={state} sidebar={<><SidePost post={state.post} scenario={state.scenario} showCondition={meta.round === 3} />{!finalReview && <PublishedHistory state={state} through={meta.round - 1} />}<aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />点选就投票，投出后不能改</div><div><Users size={15} />不能投自己</div></aside></>}>
     <section className="content-card vote-screen" data-screen={ballot}>
       <header className="round-heading"><span className="eyebrow">{ROUND_COPY[meta.round].kicker} · 投票</span><h1>{meta.title}</h1><p>{meta.subtitle}</p></header>
       <div className="submission-grid">
@@ -266,7 +274,7 @@ function Settlement({ state, dispatch }: { state: GameState; dispatch: React.Dis
   const [reviewOpen, setReviewOpen] = useState(false)
   const copyCandidate = async (round: 2 | 3) => {
     const base = state.submissions[round][state.userSeat] ?? ''
-    const text = round === 3 ? `${POST.copyPrefix}${base}` : base
+    const text = round === 3 ? `本局情景：${state.scenario}\n我的问题：${base}` : base
     try {
       await navigator.clipboard.writeText(text)
       setCopyError(null)
@@ -286,14 +294,15 @@ function Settlement({ state, dispatch }: { state: GameState; dispatch: React.Dis
       </section>
       <section className="content-card achievements-section"><div className="section-title"><div><span className="eyebrow">本局表现</span><h2>本局成就</h2></div><span className="index-note">入机指数：再玩几局就能看到了（已完成 {validGameCount}/10 局）</span></div><div className="achievement-list">{achievements.map((item, index) => <div key={item}><span>{index === achievements.length - 1 ? <Crown size={21} /> : <Trophy size={19} />}</span><b>{item}</b></div>)}</div></section>
       <section className="content-card relations-section"><div className="section-title"><h2>{relationTitle}</h2></div>{relations.length ? <div className="relation-grid">{relations.map(card => <article key={card.id} className={`relation-card relation-${card.type}`}><div className="relation-people"><Character seat={state.userSeat} outfit={state.outfitBySeat[state.userSeat]} size="small" current /><i /><Character seat={card.otherSeat} outfit={state.outfitBySeat[card.otherSeat]} size="small" /></div><h3>{card.title}</h3><p>{card.detail}</p><button onClick={() => setDrawer(card)}>看看 TA 刚才写了什么</button></article>)}</div> : <div className="neutral-recap">看看大家这局都写了什么</div>}</section>
-      <section className="content-card candidates-section"><div className="section-title"><div><span className="eyebrow">你本局写下的内容</span><h2>把这两句带回评论区</h2></div></div><div className="candidate-grid"><article><span>第二轮 · 认真评论</span><p>{state.submissions[2][state.userSeat]}</p><button onClick={() => copyCandidate(2)}>{copied === 2 ? <Check size={16} /> : <Copy size={16} />}{copied === 2 ? '已复制' : '复制我的评论'}</button></article><article><span>第三轮 · 提问</span><p>{POST.copyPrefix}{state.submissions[3][state.userSeat]}</p><small>复制问题时，会附上第三轮的补充信息。</small><button onClick={() => copyCandidate(3)}>{copied === 3 ? <Check size={16} /> : <Copy size={16} />}{copied === 3 ? '已复制' : '复制我的问题'}</button></article></div>{copyError && <p className="field-error">{copyError}</p>}<div className="final-actions"><SecondaryButton onClick={() => setReviewOpen(true)}>回看本题</SecondaryButton><PrimaryButton onClick={() => dispatch({ type: 'REMATCH' })}><RotateCcw size={17} />再来一局</PrimaryButton></div><p className="no-publish"><Clipboard size={14} />复制后，可以去原帖粘贴并自行发布。</p></section>
-    </div>{drawer && <RelationDrawer card={drawer} state={state} onClose={() => setDrawer(null)} />}{reviewOpen && <div className="modal-backdrop" onMouseDown={event => event.target === event.currentTarget && setReviewOpen(false)}><article className="rules-modal review-post" role="dialog" aria-modal="true" aria-label="回看本题"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="关闭回看"><X size={20} /></button><span className="eyebrow">题目回顾</span><h2>{state.post.title}</h2><blockquote>{state.post.text}</blockquote><div className="new-condition"><span>第三轮补充条件</span><strong>{POST.newCondition}</strong></div><PrimaryButton onClick={() => setReviewOpen(false)}>回到结算</PrimaryButton></article></div>}
+      <section className="content-card candidates-section"><div className="section-title"><div><span className="eyebrow">你本局写下的内容</span><h2>把这两句带回评论区</h2></div></div><div className="candidate-grid"><article><span>第二轮 · 认真评论</span><p>{state.submissions[2][state.userSeat]}</p><button onClick={() => copyCandidate(2)}>{copied === 2 ? <Check size={16} /> : <Copy size={16} />}{copied === 2 ? '已复制' : '复制我的评论'}</button></article><article><span>第三轮 · 提问</span><p>{`本局情景：${state.scenario}。我的问题：`}{state.submissions[3][state.userSeat]}</p><small>复制问题时，会附上第三轮的补充信息。</small><button onClick={() => copyCandidate(3)}>{copied === 3 ? <Check size={16} /> : <Copy size={16} />}{copied === 3 ? '已复制' : '复制我的问题'}</button></article></div>{copyError && <p className="field-error">{copyError}</p>}<div className="final-actions"><SecondaryButton onClick={() => setReviewOpen(true)}>回看本题</SecondaryButton><PrimaryButton onClick={() => dispatch({ type: 'REMATCH' })}><RotateCcw size={17} />再来一局</PrimaryButton></div><p className="no-publish"><Clipboard size={14} />复制后，可以去原帖粘贴并自行发布。</p></section>
+    </div>{drawer && <RelationDrawer card={drawer} state={state} onClose={() => setDrawer(null)} />}{reviewOpen && <div className="modal-backdrop" onMouseDown={event => event.target === event.currentTarget && setReviewOpen(false)}><article className="rules-modal review-post" role="dialog" aria-modal="true" aria-label="回看本题"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="关闭回看"><X size={20} /></button><span className="eyebrow">题目回顾</span><h2>{state.post.title}</h2><blockquote>{state.post.text}</blockquote><div className="new-condition"><span>第三轮补充条件</span><strong>{state.scenario}</strong></div><PrimaryButton onClick={() => setReviewOpen(false)}>回到结算</PrimaryButton></article></div>}
   </GamePage>
 }
 
 export default function GameApp() {
   const [state, dispatch] = useReducer(gameReducer, undefined, loadGame)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const requestedAiGames = useRef(new Set<string>())
   useEffect(() => {
     saveGame(state)
   }, [state])
@@ -309,11 +318,23 @@ export default function GameApp() {
     const timer = window.setTimeout(() => dispatch({ type: 'CLEAR_NOTICE' }), 3500)
     return () => window.clearTimeout(timer)
   }, [state.notice])
+  useEffect(() => {
+    if (state.phase !== 'lobby' || state.aiContentStatus !== 'idle' || requestedAiGames.current.has(state.gameId)) return
+    const gameId = state.gameId
+    requestedAiGames.current.add(gameId)
+    dispatch({ type: 'AI_CONTENT_REQUEST' })
+    void generateGameContent(state.post)
+      .then(content => dispatch({ type: 'AI_CONTENT_SUCCESS', gameId, content }))
+      .catch(error => {
+        requestedAiGames.current.delete(gameId)
+        dispatch({ type: 'AI_CONTENT_FAILURE', gameId, message: error instanceof Error ? error.message : 'AI 内容生成失败，请重试。' })
+      })
+  }, [state.phase, state.aiContentStatus, state.gameId, state.post])
 
   const screen = useMemo(() => {
     switch (state.phase) {
       case 'landing': return <Landing state={state} onStart={() => dispatch({ type: 'START' })} onRules={() => setRulesOpen(true)} />
-      case 'lobby': return <Lobby state={state} onReady={() => dispatch({ type: 'READY' })} />
+      case 'lobby': return <Lobby state={state} onReady={() => dispatch({ type: 'READY' })} onRetry={() => dispatch({ type: 'AI_CONTENT_RETRY' })} />
       case 'reading': return <Reading state={state} onNext={() => dispatch({ type: 'PHASE_EXPIRED', from: state.phase })} />
       case 'round1Write': return <WritingScreen state={state} round={1} dispatch={dispatch} />
       case 'round1Vote': return <VoteScreen key="round1Identity" state={state} ballot="round1Identity" dispatch={dispatch} />

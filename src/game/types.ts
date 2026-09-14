@@ -19,6 +19,12 @@ export type GamePhase =
   | 'settlement'
 
 export type BallotType = 'round1Identity' | 'round2Quality' | 'round3Quality' | 'finalIdentity'
+export type AiContentStatus = 'idle' | 'loading' | 'ready' | 'error'
+
+export interface GeneratedGameContent {
+  scenario: string
+  submissions: Record<RoundNumber, string>
+}
 
 export interface GameBallots {
   round1Identity: Partial<Record<SeatId, SeatId>>
@@ -31,6 +37,10 @@ export interface GameState {
   version: 2
   gameId: string
   post: InitialPost
+  seenPostIds: string[]
+  scenario: string
+  aiContentStatus: AiContentStatus
+  aiContentError?: string
   rematchIndex: number
   phase: GamePhase
   userSeat: SeatId
