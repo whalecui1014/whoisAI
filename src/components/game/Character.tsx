@@ -13,7 +13,7 @@ interface CharacterProps {
 export function Character({ seat, outfit, size = 'medium', selected, current, revealedAi }: CharacterProps) {
   const item = OUTFITS[outfit]
   return (
-    <div className={`character character-${size} ${selected ? 'is-selected' : ''} ${revealedAi ? 'is-ai-revealed' : ''}`} style={{ '--seat-color': item.color } as React.CSSProperties}>
+    <div className={`character character-${size} character-outfit-${outfit} ${selected ? 'is-selected' : ''} ${revealedAi ? 'is-ai-revealed' : ''}`} style={{ '--seat-color': item.color } as React.CSSProperties}>
       <div className="character-image-wrap">
         <img src={item.src} alt={`席位 ${seat}，${item.label}刘看山`} />
         {revealedAi && <span className="ai-reveal-badge">AI</span>}

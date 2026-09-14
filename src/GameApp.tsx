@@ -50,7 +50,7 @@ function Landing({ onStart, onRules, state }: { onStart: () => void; onRules: ()
         <span className="eyebrow"><Sparkles size={15} />知乎官方 Hackathon</span>
         <h1>快来知乎<br />找人机！</h1>
         <h2>这次，真人也来装 AI。</h2>
-        <p>三轮，每条最多 50 字。先装人机，再认真评论，最后猜出 AI。</p>
+        <p>三轮，每条最多 50 字。先装人机，认真评论，最后猜出 AI。</p>
         <div className="hero-actions"><PrimaryButton onClick={onStart}>开始游戏</PrimaryButton><SecondaryButton onClick={onRules}>看看怎么玩</SecondaryButton></div>
       </div>
       <div className="hero-characters" aria-label="四个游戏角色"><CharacterGrid state={state} large /></div>

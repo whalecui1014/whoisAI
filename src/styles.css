@@ -349,7 +349,11 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 .character-small .character-image-wrap { height: 59px; }
 .character-medium .character-image-wrap { height: 112px; }
 .character-large .character-image-wrap { height: 172px; }
-.character-image-wrap img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; object-position: center bottom; }
+.character-image-wrap img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; object-position: center bottom; transform-origin: center bottom; }
+.character-outfit-blue .character-image-wrap img { transform: translateX(-11.51%); }
+.character-outfit-green .character-image-wrap img { transform: translateX(-2.85%); }
+.character-outfit-yellow .character-image-wrap img { transform: translateX(-0.46%); }
+.character-outfit-purple .character-image-wrap img { transform: translateX(12.62%); }
 .character-label { display: flex; align-items: baseline; justify-content: center; gap: 5px; min-height: 26px; color: #697386; font-size: 12px; white-space: nowrap; }
 .character-label strong { color: var(--seat-color); font-size: 15px; }
 .character-large .character-label { font-size: 13px; }

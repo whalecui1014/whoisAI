@@ -135,8 +135,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const next = Math.max(0, state.secondsLeft - state.speed)
       if (next > 0) return { ...state, secondsLeft: next }
       if (requiredActionComplete(state)) return { ...state, secondsLeft: 0 }
-      if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '当前必需动作未完成，已进入全局 10 秒宽限。' }
-      return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '宽限结束后仍缺少必需动作，本局不授分，也不生成关系卡。', phase: 'settlement' }
+      if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '当前必需动作未完成，已进入全局 10 秒等待。' }
+      return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '等待结束后仍缺少必需动作，本局不授分，也不生成关系卡。', phase: 'settlement' }
     }
     case 'RESET': return createGame(0, 'landing')
     case 'REMATCH': return state.phase === 'settlement' ? move(createGame(state.rematchIndex + 1, 'lobby'), 'lobby') : state
