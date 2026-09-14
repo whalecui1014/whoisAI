@@ -18,9 +18,9 @@ export function DemoControls(props: DemoControlsProps) {
   const [open, setOpen] = useState(false)
   if (props.phase === 'landing' || props.phase === 'settlement') return null
   return (
-    <aside className={`demo-controls ${open ? 'open' : ''}`} aria-label="演示控制">
+    <aside className={`demo-controls ${open ? 'open' : ''}`} aria-label="对局控制">
       <button className="demo-handle" onClick={() => setOpen(value => !value)} aria-expanded={open}>
-        <span><i />单人演示控制</span><ChevronUp size={16} />
+        <span><i />对局控制</span><ChevronUp size={16} />
       </button>
       {open && <div className="demo-body">
         <div className="demo-status"><span>{PHASE_LABELS[props.phase]}</span><strong>{props.seconds > 0 ? `${props.seconds}s` : '等待操作'}</strong></div>

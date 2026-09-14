@@ -11,7 +11,7 @@ export const OUTFITS: Record<OutfitId, { label: string; src: string; color: stri
 
 export const POST = {
   title: '刚工作，每月省 800 元房租，但单程通勤从 20 分钟变成一小时，值得吗？',
-  sourceType: '原创虚构教学内容 · 游戏示例',
+  sourceType: '原创情境内容',
   excerpt: '我刚工作时选了远一点的房子。每月省下八百块，至少月底不用掐着钱吃饭。地铁上听播客、看看小说，也没想象中难熬。住得近当然舒服，但对手头不宽裕的人来说，先把固定开销压下来，心里更踏实。等收入涨了再搬，总比每个月都为房租发愁好。',
   newCondition: '题主每周可居家办公三天，只需要去公司两天。',
 }
@@ -84,7 +84,7 @@ export const PHASE_SECONDS: Record<GamePhase, number> = {
 }
 
 export const PHASE_LABELS: Record<GamePhase, string> = {
-  landing: '活动首页', lobby: '演示准备', reading: '阅读帖子', round1Write: '第一轮写作', round1Public: '第一轮统一公开', round1Vote: '第一轮猜身份', round2Write: '第二轮写作', round2Public: '第二轮统一公开', round2Vote: '第二轮评评论', round3Write: '第三轮提问题', round3Public: '第三轮统一公开', round3QualityVote: '第三轮评问题', finalIdentityVote: '最终身份指认', reveal: '揭晓 AI', settlement: '本局结算',
+  landing: '活动首页', lobby: '对局准备', reading: '阅读帖子', round1Write: '第一轮写作', round1Public: '第一轮统一公开', round1Vote: '第一轮猜身份', round2Write: '第二轮写作', round2Public: '第二轮统一公开', round2Vote: '第二轮评评论', round3Write: '第三轮提问题', round3Public: '第三轮统一公开', round3QualityVote: '第三轮评问题', finalIdentityVote: '最终身份指认', reveal: '揭晓 AI', settlement: '本局结算',
 }
 
 export const PHASE_ORDER: GamePhase[] = ['lobby', 'reading', 'round1Write', 'round1Public', 'round1Vote', 'round2Write', 'round2Public', 'round2Vote', 'round3Write', 'round3Public', 'round3QualityVote', 'finalIdentityVote', 'reveal', 'settlement']

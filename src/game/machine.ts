@@ -27,7 +27,7 @@ const writePhaseByRound: Record<RoundNumber, GamePhase> = { 1: 'round1Write', 2:
 const phaseByBallot: Record<BallotType, GamePhase> = { round1Identity: 'round1Vote', round2Quality: 'round2Vote', round3Quality: 'round3QualityVote', finalIdentity: 'finalIdentityVote' }
 
 function newId(index: number) {
-  return `demo-${Date.now().toString(36)}-${index}`
+  return `game-${Date.now().toString(36)}-${index}`
 }
 
 export function createGame(rematchIndex = 0, phase: GamePhase = 'landing'): GameState {

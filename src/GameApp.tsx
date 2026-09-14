@@ -47,17 +47,16 @@ function Landing({ onStart, onRules, state }: { onStart: () => void; onRules: ()
   return <main className="landing-page" data-screen="landing">
     <section className="hero-section">
       <div className="hero-copy">
-        <span className="eyebrow"><Sparkles size={15} />知乎官方 Hackathon 可玩原型</span>
+        <span className="eyebrow"><Sparkles size={15} />知乎官方 Hackathon</span>
         <h1>快来知乎<br />找人机！</h1>
         <h2>这次，真人也来装 AI。</h2>
         <p>三轮，每条最多 50 字。先装人机，再认真评论，最后猜出 AI。</p>
-        <div className="hero-actions"><PrimaryButton onClick={onStart}>开始试玩</PrimaryButton><SecondaryButton onClick={onRules}>看看怎么玩</SecondaryButton></div>
-        <div className="demo-disclaimer"><Info size={16} /><span><b>单人演示</b>：另外两名真人席位和一个 AI 席位由预设脚本模拟，不是在匹配真实用户。</span></div>
+        <div className="hero-actions"><PrimaryButton onClick={onStart}>开始游戏</PrimaryButton><SecondaryButton onClick={onRules}>看看怎么玩</SecondaryButton></div>
       </div>
       <div className="hero-characters" aria-label="四个游戏角色"><CharacterGrid state={state} large /></div>
     </section>
     <section className="topic-preview">
-      <div><span>本次试玩话题</span><h3>{POST.title}</h3><p>{POST.sourceType}</p></div>
+      <div><span>本局话题</span><h3>{POST.title}</h3><p>{POST.sourceType}</p></div>
       <span className="topic-tag">房租与通勤</span>
     </section>
   </main>
@@ -76,17 +75,17 @@ function StageProgress({ phase }: { phase: GamePhase }) {
 function Lobby({ state, onReady }: { state: GameState; onReady: () => void }) {
   return <GamePage state={state} sidebar={<LobbyAside state={state} />}>
     <section className="content-card lobby-card" data-screen="lobby">
-      <span className="eyebrow">演示准备</span><h1>本局角色已就位</h1>
+      <span className="eyebrow">对局准备</span><h1>本局角色已就位</h1>
       <p className="lead">席位和服装会在整局保持不变。AI 在揭晓前不会有特殊标记。</p>
       <CharacterGrid state={state} large />
-      <div className="solo-notice"><Users size={20} /><div><strong>这是单人演示局</strong><span>你控制席位 {state.userSeat}。其余三席由预设脚本模拟，其中包含两个“真人席位”和一个“AI 席位”。</span></div></div>
+      <div className="solo-notice"><Users size={20} /><div><strong>本局席位说明</strong><span>你控制席位 {state.userSeat}。其余三席使用本地预设内容，其中包含两个真人身份和一个 AI 身份，不是在匹配真实用户。</span></div></div>
       <PrimaryButton onClick={onReady}>准备好了</PrimaryButton>
     </section>
   </GamePage>
 }
 
 function LobbyAside({ state }: { state: GameState }) {
-  return <><SidePost /><aside className="side-card"><span className="side-kicker">本局编号</span><strong className="mono">{state.gameId}</strong><p>角色身份只是演示数据，不代表在线用户或真实模型调用。</p></aside></>
+  return <><SidePost /><aside className="side-card"><span className="side-kicker">本局编号</span><strong className="mono">{state.gameId}</strong><p>角色身份为本局预设数据，不代表在线用户或真实模型调用。</p></aside></>
 }
 
 function SidePost({ showCondition = false }: { showCondition?: boolean }) {
@@ -105,8 +104,8 @@ function GamePage({ state, children, sidebar }: { state: GameState; children: Re
 function Reading({ state, onNext }: { state: GameState; onNext: () => void }) {
   return <GamePage state={state} sidebar={<aside className="side-card rules-side"><span className="side-kicker">三轮目标</span><ol><li><b>装人机</b><span>写反串，猜身份</span></li><li><b>认真说</b><span>写评论，评内容</span></li><li><b>值得问</b><span>写问题，再终猜</span></li></ol><details><summary>展开计分规则 <ChevronDown size={15} /></summary><p>反串最多 2 分；初次识破 2 分；评论与问题各最多 4 分；最终识破 3 分。</p></details></aside>}>
     <article className="content-card reading-card" data-screen="reading">
-      <span className="eyebrow">阅读阶段 · 游戏示例</span><h1>{POST.title}</h1>
-      <div className="answer-source"><div className="source-avatar">答</div><div><b>回答摘录</b><span>原创虚构教学内容，不对应真实作者、赞同数或原帖链接</span></div></div>
+      <span className="eyebrow">阅读阶段</span><h1>{POST.title}</h1>
+      <div className="answer-source"><div className="source-avatar">答</div><div><b>回答摘录</b><span>本局原创情境内容，不对应真实作者、赞同数或原帖链接</span></div></div>
       <blockquote>{POST.excerpt}</blockquote>
       <div className="reading-note"><LockKeyhole size={18} /><span>第三轮会出现一个新条件，现在不会提前展示。</span></div>
       <PrimaryButton onClick={onNext}>读完了，开始第一轮</PrimaryButton>
@@ -250,7 +249,7 @@ function Settlement({ state, dispatch }: { state: GameState; dispatch: React.Dis
       <section className="content-card achievements-section"><div className="section-title"><div><span className="eyebrow">确定性条件生成</span><h2>本局成就</h2></div><span className="index-note">入机指数：记录积累中（不足 10 局）</span></div><div className="achievement-list">{achievements.map((item, index) => <div key={item}><span>{index === achievements.length - 1 ? <Crown size={21} /> : <Trophy size={19} />}</span><b>{item}</b></div>)}</div></section>
       <section className="content-card relations-section"><div className="section-title"><div><span className="eyebrow">基于本局真实选票 · 不影响积分</span><h2>你和本局玩家的小故事</h2></div></div>{relations.length ? <div className="relation-grid">{relations.map(card => <article key={card.id} className={`relation-card relation-${card.type}`}><div className="relation-people"><Character seat={state.userSeat} outfit={state.outfitBySeat[state.userSeat]} size="small" current /><i /><Character seat={card.otherSeat} outfit={state.outfitBySeat[card.otherSeat]} size="small" /></div><h3>{card.title}</h3><p>{card.detail}</p><button onClick={() => setDrawer(card)}>看看 TA 刚才写了什么</button></article>)}</div> : <div className="neutral-recap">这一局，你们围绕同一篇帖子留下了这些评论。</div>}</section>
       <section className="content-card candidates-section"><div className="section-title"><div><span className="eyebrow">仅本人第二、三轮内容</span><h2>带走你的评论与问题</h2></div></div><div className="candidate-grid"><article><span>第二轮 · 认真评论</span><p>{state.submissions[2][state.userSeat]}</p><button onClick={() => copyCandidate(2)}>{copied === 2 ? <Check size={16} /> : <Copy size={16} />}{copied === 2 ? '已复制' : '复制我的评论'}</button></article><article><span>第三轮 · 提问</span><p>{state.submissions[3][state.userSeat]}</p><small>复制时会自动带上“每周居家三天”的游戏假设前提。</small><button onClick={() => copyCandidate(3)}>{copied === 3 ? <Check size={16} /> : <Copy size={16} />}{copied === 3 ? '已复制' : '复制我的问题'}</button></article></div>{copyError && <p className="field-error">{copyError}</p>}<div className="final-actions"><SecondaryButton onClick={() => setReviewOpen(true)}>回看本题</SecondaryButton><PrimaryButton onClick={() => dispatch({ type: 'REMATCH' })}><RotateCcw size={17} />再来一局</PrimaryButton></div><p className="no-publish"><Clipboard size={14} />这里只复制到剪贴板，不会显示假的“已发布到知乎”。</p></section>
-    </div>{drawer && <RelationDrawer card={drawer} state={state} onClose={() => setDrawer(null)} />}{reviewOpen && <div className="modal-backdrop" onMouseDown={event => event.target === event.currentTarget && setReviewOpen(false)}><article className="rules-modal review-post" role="dialog" aria-modal="true" aria-label="回看本题"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="关闭回看"><X size={20} /></button><span className="eyebrow">原帖摘录 · 游戏示例</span><h2>{POST.title}</h2><blockquote>{POST.excerpt}</blockquote><div className="new-condition"><span>第三轮游戏假设</span><strong>{POST.newCondition}</strong></div><PrimaryButton onClick={() => setReviewOpen(false)}>回到结算</PrimaryButton></article></div>}
+    </div>{drawer && <RelationDrawer card={drawer} state={state} onClose={() => setDrawer(null)} />}{reviewOpen && <div className="modal-backdrop" onMouseDown={event => event.target === event.currentTarget && setReviewOpen(false)}><article className="rules-modal review-post" role="dialog" aria-modal="true" aria-label="回看本题"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="关闭回看"><X size={20} /></button><span className="eyebrow">原帖摘录</span><h2>{POST.title}</h2><blockquote>{POST.excerpt}</blockquote><div className="new-condition"><span>第三轮游戏假设</span><strong>{POST.newCondition}</strong></div><PrimaryButton onClick={() => setReviewOpen(false)}>回到结算</PrimaryButton></article></div>}
   </GamePage>
 }
 
