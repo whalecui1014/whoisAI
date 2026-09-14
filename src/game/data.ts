@@ -9,53 +9,90 @@ export const OUTFITS: Record<OutfitId, { label: string; src: string; color: stri
   purple: { label: '紫色运动外套', src: '/assets/characters/liukanshan-purple.png', color: '#7251b5' },
 }
 
-export const POST = {
-  title: '刚工作，每月省 800 元房租，但单程通勤从 20 分钟变成一小时，值得吗？',
-  sourceType: '原创情境内容',
-  excerpt: '我刚工作时选了远一点的房子。每月省下八百块，至少月底不用掐着钱吃饭。地铁上听播客、看看小说，也没想象中难熬。住得近当然舒服，但对手头不宽裕的人来说，先把固定开销压下来，心里更踏实。等收入涨了再搬，总比每个月都为房租发愁好。',
-  newCondition: '题主每周可居家办公三天，只需要去公司两天。',
+export const LANDING_COPY = {
+  eyebrow: '三轮匿名评论游戏',
+  titleTop: '快来知乎',
+  titleBottom: '找人机！',
+  subtitle: '这次，真人也来装 AI。',
+  description: '三轮、每条最多 50 字：先装 AI，再认真说，最后猜出谁是 AI。',
+  primaryAction: '开始一局',
+  secondaryAction: '看看怎么玩',
+  topicLabel: '本局话题',
 }
 
-export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; task: string; hints: string[] }> = {
+export const POST = {
+  title: '和朋友旅行，有人把五天行程排到小时，我想随性一点，该提前说吗？',
+  tag: '朋友旅行',
+  sourceType: '游戏示例',
+  sourceDescription: '为本局创作的游戏示例，不对应真实作者、赞同数或原帖链接',
+  excerpt: '下个月我和三位朋友去旅行。有人已经做好五天攻略，景点、餐厅和交通都排到了具体时间。我看到清单就有点累，更想每天只定一两个地方，剩下的时间随走随停。现在提出会不会扫兴，还是到了再看情况？',
+  newCondition: '同行者说清单只是备选，不要求全部打卡；但其中两项活动已经付款，取消不退款。',
+  copyPrefix: '补充条件：同行者说清单只是备选，但其中两项活动取消不退款。我想问：',
+}
+
+export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; task: string; hints: string[]; placeholder: string; lockedNext: string; publicTitle: string; publicDescription: string; publicNext: string }> = {
   1: {
     kicker: '第一轮 · 全员装人机',
-    title: '故意写得像 AI 一点',
-    task: '围绕这篇帖子，故意写得像 AI 一点。看看谁能把人类演没了。',
-    hints: ['综合评估……', '建议结合……', '从多个维度来看……'],
+    title: '先把自己写得像 AI',
+    task: '围绕这篇帖子，写一条刻意像 AI 的评论。',
+    hints: ['列出三项考虑因素', '给一个过分周全的方案', '像总结报告一样收尾'],
+    placeholder: '一本正经地给个建议……',
+    lockedNext: '查看四条评论',
+    publicTitle: '四条“AI 味”评论已公开',
+    publicDescription: '先看完四条，再猜哪一席真的由 AI 控制。',
+    publicNext: '猜谁是 AI',
   },
   2: {
     kicker: '第二轮 · 这次认真说',
-    title: '把真正想说的话写出来',
+    title: '你会怎么回复题主？',
     task: '如果这条评论真的留在帖子下面，你会说什么？',
-    hints: ['我在意的是……', '容易被忽略的是……', '如果是我，我会……'],
+    hints: ['你更在意旅行节奏，还是同行感受？', '攻略已经有人做了，你会怎么回应？', '哪些行程想一起，哪些想留白？'],
+    placeholder: '写下你最在意的一点……',
+    lockedNext: '查看四条评论',
+    publicTitle: '四条评论已公开',
+    publicDescription: '这轮只看内容：哪一条最值得点赞？',
+    publicNext: '选一条想点赞的评论',
   },
   3: {
     kicker: '第三轮 · 这问题值得问',
-    title: '写一个值得题主回答的问题',
-    task: '有了这个条件，你最想继续问什么？写一个值得题主回答的问题。',
-    hints: ['这个条件稳定吗？', '还有什么成本没算？', '如果情况变化呢？'],
+    title: '还有什么没问清楚？',
+    task: '根据新条件，只问一个可能改变你判断的问题。',
+    hints: ['先问清时间限制', '确认能否分开行动', '只追问一个关键条件'],
+    placeholder: '只问一个你最想确认的问题……',
+    lockedNext: '查看四个问题',
+    publicTitle: '四个问题已公开',
+    publicDescription: '先选一个最想让题主回答的问题，下一页再猜谁是 AI。',
+    publicNext: '选一个想回答的问题',
   },
 }
 
+// 仅用于本地单人流程；真实多人对局不得复用这些席位内容。
 export const SCRIPTED_SUBMISSIONS: Record<RoundNumber, Record<SeatId, string>> = {
   1: {
-    A: '我就在这里，不躲，不藏，不绕，不逃，稳稳地接住你',
-    B: '我用最直白，最不绕弯子，最一阵见血的方式告诉你，你毕不了业了',
-    C: '你的观察力太敏锐了!这是典型的顶级研究者才具备的批判性思维！',
-    D: '这不是你的能力不足，而是知识内卷与草料供给的结构性错配。',
+    A: '建议从同行关系、体力分配与时间成本三个维度综合评估，以实现旅行体验最优解。',
+    B: '五天行程已规划到小时，按计划执行能减少现场决策成本，避免团队效率下降。',
+    C: '可以采用“固定项目+自由时段”的混合方案，兼顾攻略成果与旅行弹性。',
+    D: '首先认可对方的攻略投入，其次说明节奏偏好，最后确认必须参加的项目。',
   },
   2: {
-    A: '每天多八十分钟，我宁愿省别的钱。下班后的时间也很贵。',
-    B: '每月省八百，但每天多耗掉八十分钟，我会优先保住下班后的时间。',
-    C: '预算紧可以先住远些，但换乘和加班后的回家成本也要算上。',
-    D: '省下的是房租，失去的是长期精力；短期过渡可以，别默认一直忍。',
+    A: '我会现在说。到了当地再临时改，做攻略的人反而更难受。',
+    B: '五天很短，我愿意先照计划走两天；如果太累，再留半天自己逛。',
+    C: '攻略可以参考，别变成全员打卡表。想慢一点也该提前说清楚。',
+    D: '先问哪些项目大家一定想一起去，其他时间分开行动也挺好。',
   },
   3: {
-    A: '居家办公写进制度了吗？如果以后变成天天到岗，你还能承受吗？',
-    B: '公司以后会不会取消居家？如果恢复到岗，这套方案还能撑多久？',
-    C: '居家办公日固定吗？临时到岗增加时，你能接受额外成本吗？',
-    D: '每周只去两天，省下的房租能覆盖偶尔打车和时间损耗吗？',
+    A: '两项已付款的活动分别在什么时候？',
+    B: '如果有人不参加已付款的活动，费用怎么分？',
+    C: '除了那两项活动，大家能接受分开行动吗？',
+    D: '做攻略的朋友最希望大家保留的是哪一段行程？',
   },
+}
+
+export const VOTE_COPY: Record<BallotType, { title: string; subtitle: string; round: RoundNumber; button: string; next: string }> = {
+  round1Identity: { title: '第一轮，你觉得谁是 AI？', subtitle: '选一个其他席位。确认前可以改，确认后锁定。', round: 1, button: '确认指认', next: '进入第二轮' },
+  round2Quality: { title: '哪条评论最值得你点赞？', subtitle: '这一票只看内容，不猜身份。', round: 2, button: '确认点赞', next: '进入第三轮' },
+  round3Quality: { title: '你最想让题主回答哪个问题？', subtitle: '先选问题；下一页再猜 AI。', round: 3, button: '确认选择', next: '最后一次，猜谁是 AI' },
+  finalIdentity: { title: '最后一次，你觉得谁是 AI？', subtitle: '确认后将揭晓身份。', round: 3, button: '确认最终选择', next: '揭晓谁是 AI' },
 }
 
 export const SAMPLE_SCRIPTED_BALLOTS: Record<BallotType, Record<SeatId, SeatId>> = {
@@ -84,7 +121,7 @@ export const PHASE_SECONDS: Record<GamePhase, number> = {
 }
 
 export const PHASE_LABELS: Record<GamePhase, string> = {
-  landing: '活动首页', lobby: '对局准备', reading: '阅读帖子', round1Write: '第一轮写作', round1Public: '第一轮统一公开', round1Vote: '第一轮猜身份', round2Write: '第二轮写作', round2Public: '第二轮统一公开', round2Vote: '第二轮评评论', round3Write: '第三轮提问题', round3Public: '第三轮统一公开', round3QualityVote: '第三轮评问题', finalIdentityVote: '最终身份指认', reveal: '揭晓 AI', settlement: '本局结算',
+  landing: '活动首页', lobby: '对局准备', reading: '阅读帖子', round1Write: '第一轮写作', round1Public: '第一轮公开', round1Vote: '第一轮猜 AI', round2Write: '第二轮写作', round2Public: '第二轮公开', round2Vote: '第二轮选评论', round3Write: '第三轮提问', round3Public: '第三轮公开', round3QualityVote: '第三轮选问题', finalIdentityVote: '最终猜 AI', reveal: '身份揭晓', settlement: '本局结算',
 }
 
 export const PHASE_ORDER: GamePhase[] = ['lobby', 'reading', 'round1Write', 'round1Public', 'round1Vote', 'round2Write', 'round2Public', 'round2Vote', 'round3Write', 'round3Public', 'round3QualityVote', 'finalIdentityVote', 'reveal', 'settlement']

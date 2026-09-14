@@ -85,6 +85,12 @@ function requiredActionComplete(state: GameState): boolean {
   return true
 }
 
+function missingActionMessage(state: GameState): string {
+  if (state.phase === 'round1Write' || state.phase === 'round2Write' || state.phase === 'round3Write') return '请先提交本轮内容。'
+  if (state.phase === 'round1Vote' || state.phase === 'round2Vote' || state.phase === 'round3QualityVote' || state.phase === 'finalIdentityVote') return '请先确认本轮投票。'
+  return '请先完成当前操作。'
+}
+
 function nextPhase(phase: GamePhase): GamePhase {
   const map: Partial<Record<GamePhase, GamePhase>> = {
     reading: 'round1Write', round1Write: 'round1Public', round1Public: 'round1Vote', round1Vote: 'round2Write', round2Write: 'round2Public', round2Public: 'round2Vote', round2Vote: 'round3Write', round3Write: 'round3Public', round3Public: 'round3QualityVote', round3QualityVote: 'finalIdentityVote', finalIdentityVote: 'reveal', reveal: 'settlement',
@@ -107,7 +113,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== writePhaseByRound[action.round] || state.submissions[action.round][state.userSeat]) return state
       const error = validateSubmission(state.drafts[action.round])
       if (error) return { ...state, notice: error }
-      return { ...state, submissions: { ...state.submissions, [action.round]: { ...state.submissions[action.round], [state.userSeat]: state.drafts[action.round] } }, notice: '已确认并锁定。公开前其他席位看不到这条内容。' }
+      return { ...state, submissions: { ...state.submissions, [action.round]: { ...state.submissions[action.round], [state.userSeat]: state.drafts[action.round] } }, notice: undefined }
     }
     case 'SELECT': {
       if (state.phase !== phaseByBallot[action.ballot]) return state
@@ -121,11 +127,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!target) return { ...state, notice: '请先选择一个其他席位。' }
       if (target === state.userSeat) return { ...state, notice: '不能给自己的席位投票。' }
       if (state.ballots[action.ballot][state.userSeat]) return state
-      return { ...state, ballots: { ...state.ballots, [action.ballot]: { ...state.ballots[action.ballot], [state.userSeat]: target } }, notice: `已锁定对 ${target} 的选择。` }
+      return { ...state, ballots: { ...state.ballots, [action.ballot]: { ...state.ballots[action.ballot], [state.userSeat]: target } }, notice: `已确认：席位 ${target}。` }
     }
     case 'ADVANCE': {
       if (state.phase !== action.from) return state
-      if (!requiredActionComplete(state)) return { ...state, notice: '请先完成当前阶段必须的提交或投票。' }
+      if (!requiredActionComplete(state)) return { ...state, notice: missingActionMessage(state) }
       return move(state, nextPhase(state.phase))
     }
     case 'TOGGLE_PAUSE': return { ...state, paused: !state.paused }
@@ -135,8 +141,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const next = Math.max(0, state.secondsLeft - state.speed)
       if (next > 0) return { ...state, secondsLeft: next }
       if (requiredActionComplete(state)) return { ...state, secondsLeft: 0 }
-      if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '当前必需动作未完成，已进入全局 10 秒等待。' }
-      return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '等待结束后仍缺少必需动作，本局不授分，也不生成关系卡。', phase: 'settlement' }
+      if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '还没有完成当前操作，再给你 10 秒。' }
+      return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '10 秒结束时仍未提交或投票，本局不计分，也不会生成关系卡。', phase: 'settlement' }
     }
     case 'RESET': return createGame(0, 'landing')
     case 'REMATCH': return state.phase === 'settlement' ? move(createGame(state.rematchIndex + 1, 'lobby'), 'lobby') : state

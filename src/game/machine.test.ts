@@ -5,7 +5,7 @@ import { createGame, gameReducer } from './machine'
 describe('game state machine', () => {
   it('keeps each simultaneous-public stage separate and totals the PRD 345 seconds', () => {
     let state = createGame(0, 'round1Write')
-    state = gameReducer(state, { type: 'DRAFT', round: 1, value: '建议结合预算和通勤时间综合判断。' })
+    state = gameReducer(state, { type: 'DRAFT', round: 1, value: '建议综合考虑同行关系、旅行节奏与预订成本。' })
     state = gameReducer(state, { type: 'SUBMIT', round: 1 })
     state = gameReducer(state, { type: 'ADVANCE', from: 'round1Write' })
     expect(state.phase).toBe('round1Public')

@@ -20,11 +20,11 @@ export function calculateScores(aiSeat: SeatId, ballots: GameBallots): ScoreBrea
 
 export function achievementsFor(score: ScoreBreakdown, scores: ScoreBreakdown[]): string[] {
   const max = Math.max(...scores.map(item => item.total))
-  const achievements = ['人机初体验']
-  if (score.masquerade === 2) achievements.push('反串高手')
-  if (score.comment === 4) achievements.push('好评制造者')
-  if (score.question === 4) achievements.push('灵魂提问')
-  if (score.firstDetect === 2 && score.finalDetect === 3) achievements.push('双料侦探')
-  if (score.total === max) achievements.push('本局全能王')
+  const achievements = ['完成一局']
+  if (score.masquerade === 2) achievements.push('反串成功')
+  if (score.comment === 4) achievements.push('评论被两人选中')
+  if (score.question === 4) achievements.push('提问被两人选中')
+  if (score.firstDetect === 2 && score.finalDetect === 3) achievements.push('两次猜中 AI')
+  if (score.total === max) achievements.push('本局最高分')
   return achievements
 }
