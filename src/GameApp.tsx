@@ -1,15 +1,16 @@
-import { Check, ChevronDown, Clipboard, Clock3, Copy, Crown, ExternalLink, Eye, FileText, Info, LockKeyhole, MessageCircle, RotateCcw, Sparkles, ThumbsUp, Trophy, Users, X } from 'lucide-react'
+import { Check, ChevronDown, Clipboard, Clock3, Copy, Crown, ExternalLink, Eye, FileText, Info, LockKeyhole, MessageCircle, RotateCcw, Sparkles, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useMemo, useReducer, useState } from 'react'
 import { Character } from './components/game/Character'
 import { DemoControls } from './components/game/DemoControls'
 import { GameHeader } from './components/game/GameHeader'
 import { LANDING_COPY, PHASE_ORDER, POST, ROUND_COPY, SEATS, VOTE_COPY } from './game/data'
 import { countVisibleCharacters, validateSubmission } from './game/graphemes'
-import { completeBallots, gameReducer, phaseNeedsAction } from './game/machine'
+import { completeBallots, gameReducer } from './game/machine'
+import { localVoteService } from './game/mockService'
 import { generateRelationCards } from './game/relations'
 import { achievementsFor, calculateScores } from './game/scoring'
 import { loadGame, saveGame } from './game/storage'
-import type { BallotType, GamePhase, GameState, RelationCardData, RoundNumber } from './game/types'
+import type { BallotType, GamePhase, GameState, RelationCardData, RoundNumber, SeatId } from './game/types'
 
 function PrimaryButton({ children, onClick, disabled, className = '' }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; className?: string }) {
   return <button className={`primary-button ${className}`} onClick={onClick} disabled={disabled}>{children}</button>
@@ -65,7 +66,7 @@ function Landing({ onStart, onRules, state }: { onStart: () => void; onRules: ()
 function StageProgress({ phase }: { phase: GamePhase }) {
   const active = PHASE_ORDER.indexOf(phase)
   const steps = [
-    ['准备', 0], ['阅读', 1], ['第一轮', 2], ['第二轮', 5], ['第三轮', 8], ['揭晓', 12], ['结算', 13],
+    ['准备', 0], ['阅读', 1], ['第一轮', 2], ['第二轮', 4], ['第三轮', 6], ['揭晓', 9], ['结算', 10],
   ] as const
   return <div className="stage-progress">
     {steps.map(([label, index], stepIndex) => <div key={label} className={active >= index ? 'done' : ''}><i>{active > index ? <Check size={12} /> : stepIndex + 1}</i><span>{label}</span></div>)}
@@ -101,14 +102,14 @@ function GamePage({ state, children, sidebar }: { state: GameState; children: Re
   return <main className="game-page"><StageProgress phase={state.phase} /><div className={`game-columns ${sidebar ? '' : 'single'}`}><div>{children}</div>{sidebar && <div className="game-sidebar">{sidebar}</div>}</div></main>
 }
 
-function Reading({ state, onNext }: { state: GameState; onNext: () => void }) {
+function Reading({ state }: { state: GameState }) {
   return <GamePage state={state} sidebar={<aside className="side-card rules-side"><span className="side-kicker">这局要做什么</span><ol><li><b>装人机</b><span>写得像 AI，再猜一次</span></li><li><b>认真说</b><span>写评论，选一条</span></li><li><b>值得问</b><span>提一个问题，最后猜 AI</span></li></ol><details><summary>展开计分规则 <ChevronDown size={15} /></summary><p>被真人误认最多 2 分；首轮猜中 2 分；评论与问题各最多 4 分；最终猜中 3 分。</p></details></aside>}>
     <article className="content-card reading-card" data-screen="reading">
       <span className="eyebrow">阅读阶段</span><h1>{POST.title}</h1>
       <div className="answer-source"><div className="source-avatar">答</div><div><b>原回答要点</b><span>{POST.sourceDescription}</span></div></div>
       <blockquote>{POST.excerpt}</blockquote>
       <div className="reading-note"><LockKeyhole size={18} /><span>补充条件会在第三轮出现。</span></div>
-      <PrimaryButton onClick={onNext}>开始第一轮</PrimaryButton>
+      <div className="auto-stage-note"><Clock3 size={17} /><span>阅读结束后自动进入第一轮。</span></div>
     </article>
   </GamePage>
 }
@@ -133,47 +134,58 @@ function WritingScreen({ state, round, dispatch }: { state: GameState; round: Ro
         <span className={count > 50 ? 'over' : ''}>{count}/50</span>
       </label>
       {error && <p className="field-error">{error}</p>}
-      {locked ? <div className="locked-submit"><Check size={18} /><span><b>已提交</b>其他席位的内容将在下一页一起出现。</span></div> : <p className="privacy-line"><Eye size={15} />提交后不能修改；四条内容会一起公开。</p>}
-      <div className="screen-actions">
-        {!locked ? <PrimaryButton onClick={() => dispatch({ type: 'SUBMIT', round })} disabled={Boolean(error) || !draft}>确认提交</PrimaryButton> : <PrimaryButton onClick={() => dispatch({ type: 'ADVANCE', from: state.phase })}>{ROUND_COPY[round].lockedNext}</PrimaryButton>}
-      </div>
-    </section>
-  </GamePage>
-}
-
-function PublicScreen({ state, round, dispatch }: { state: GameState; round: RoundNumber; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
-  return <GamePage state={state} sidebar={<><SidePost showCondition={round === 3} /><PublishedHistory state={state} through={round - 1} /><aside className="side-card"><span className="side-kicker">本轮规则</span><p>所有内容同时公开；现在看不到票数和身份。</p></aside></>}>
-    <section className="content-card public-screen" data-screen={`round-${round}-public`}>
-      <header className="round-heading"><span className="eyebrow">{ROUND_COPY[round].kicker} · 同时公开</span><h1>{ROUND_COPY[round].publicTitle}</h1><p>{ROUND_COPY[round].publicDescription}</p></header>
-      <div className="submission-grid">
-        {SEATS.map(seat => <article key={seat} className="submission-card published"><div className="submission-author"><Character seat={seat} outfit={state.outfitBySeat[seat]} size="small" current={seat === state.userSeat} /></div><p>{state.submissions[round][seat]}</p>{seat === state.userSeat && <span className="self-chip">你的内容</span>}</article>)}
-      </div>
-      <div className="screen-actions"><PrimaryButton onClick={() => dispatch({ type: 'ADVANCE', from: state.phase })}>{ROUND_COPY[round].publicNext}</PrimaryButton></div>
+      {locked ? <div className="locked-submit"><Check size={18} /><span><b>已提交</b>本轮结束后自动公开四条内容。</span></div> : <p className="privacy-line"><Eye size={15} />提交后不能修改；四条内容会一起公开。</p>}
+      {!locked && <div className="screen-actions"><PrimaryButton onClick={() => dispatch({ type: 'SUBMIT', round })} disabled={Boolean(error) || !draft}>确认提交</PrimaryButton></div>}
     </section>
   </GamePage>
 }
 
 function VoteScreen({ state, ballot, dispatch }: { state: GameState; ballot: BallotType; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
   const meta = VOTE_COPY[ballot]
-  const selected = state.selections[ballot]
   const lockedTarget = state.ballots[ballot][state.userSeat]
-  return <GamePage state={state} sidebar={<><SidePost showCondition={meta.round === 3} /><PublishedHistory state={state} through={meta.round - 1} /><aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />确认后不能修改</div><div><Users size={15} />不能投自己</div></aside></>}>
+  const [pendingTarget, setPendingTarget] = useState<SeatId | null>(null)
+  const [voteError, setVoteError] = useState<string | null>(null)
+  const finalReview = ballot === 'finalIdentity'
+
+  useEffect(() => {
+    setPendingTarget(null)
+    setVoteError(null)
+  }, [ballot, state.gameId])
+
+  const castVote = async (seat: SeatId) => {
+    if (seat === state.userSeat || lockedTarget || pendingTarget) return
+    setPendingTarget(seat)
+    setVoteError(null)
+    try {
+      const receipt = await localVoteService.submitVote({ gameId: state.gameId, ballot, voter: state.userSeat, target: seat })
+      dispatch({ type: 'CAST_VOTE', ballot, seat: receipt.target })
+    } catch (error) {
+      setVoteError(error instanceof Error ? error.message : '投票没有提交成功，请重试。')
+    } finally {
+      setPendingTarget(null)
+    }
+  }
+
+  return <GamePage state={state} sidebar={<><SidePost showCondition={meta.round === 3} />{!finalReview && <PublishedHistory state={state} through={meta.round - 1} />}<aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />点选后不能修改</div><div><Users size={15} />不能投自己</div></aside></>}>
     <section className="content-card vote-screen" data-screen={ballot}>
       <header className="round-heading"><span className="eyebrow">{ROUND_COPY[meta.round].kicker} · 投票</span><h1>{meta.title}</h1><p>{meta.subtitle}</p></header>
       <div className="submission-grid">
         {SEATS.map(seat => {
           const isSelf = seat === state.userSeat
-          const isSelected = (lockedTarget ?? selected) === seat
-          return <button key={seat} className={`submission-card ${isSelected ? 'selected' : ''} ${isSelf ? 'self' : ''}`} disabled={isSelf || Boolean(lockedTarget)} onClick={() => dispatch({ type: 'SELECT', ballot, seat })}>
+          const isSelected = lockedTarget === seat
+          const isPending = pendingTarget === seat
+          return <button key={seat} className={`submission-card ${isSelected ? 'selected' : ''} ${isPending ? 'submitting' : ''} ${isSelf ? 'self' : ''} ${finalReview ? 'final-review-card' : ''}`} disabled={isSelf || Boolean(lockedTarget) || Boolean(pendingTarget)} aria-pressed={isSelected} onClick={() => castVote(seat)}>
             <div className="submission-author"><Character seat={seat} outfit={state.outfitBySeat[seat]} size="small" current={isSelf} /><span className="select-indicator">{isSelected ? <Check size={16} /> : ''}</span></div>
-            <p>{state.submissions[meta.round][seat]}</p>
-            {isSelf && <span className="self-chip">你的内容 · 不可自投</span>}
+            {finalReview ? <div className="final-round-review">{([1, 2, 3] as RoundNumber[]).map(round => <div key={round}><span>第 {round} 轮</span><p>{state.submissions[round][seat]}</p></div>)}</div> : <p>{state.submissions[meta.round][seat]}</p>}
+            {isSelf && <span className="self-chip">你</span>}
+            {isSelected && <span className="vote-chip">已投</span>}
+            {isPending && <span className="vote-chip pending">提交中</span>}
           </button>
         })}
       </div>
-      <div className="screen-actions sticky-mobile-action">
-        {!lockedTarget ? <PrimaryButton onClick={() => dispatch({ type: 'LOCK_VOTE', ballot })} disabled={!selected}>{meta.button}</PrimaryButton> : <><span className="vote-locked"><Check size={16} />已确认：席位 {lockedTarget}</span><PrimaryButton onClick={() => dispatch({ type: 'ADVANCE', from: state.phase })}>{meta.next}</PrimaryButton></>}
-      </div>
+      {lockedTarget && <div className="vote-status success"><Check size={17} /><span>已投票，等待本阶段结束</span></div>}
+      {!lockedTarget && pendingTarget && <div className="vote-status"><Clock3 size={17} /><span>正在提交选票…</span></div>}
+      {!lockedTarget && voteError && <div className="vote-status error" role="alert"><Info size={17} /><span>{voteError} 请重新点选。</span></div>}
     </section>
   </GamePage>
 }
@@ -189,7 +201,7 @@ function Reveal({ state, dispatch }: { state: GameState; dispatch: React.Dispatc
       <p className="muted-copy">其他席位仍保持匿名。</p>
       <div className="reveal-actions">
         <a className="secondary-button source-link" href={POST.sourceUrl}>去知乎看原帖<ExternalLink size={16} /></a>
-        <PrimaryButton onClick={() => dispatch({ type: 'ADVANCE', from: state.phase })}>看积分和关系卡</PrimaryButton>
+        <PrimaryButton onClick={() => dispatch({ type: 'SHOW_SETTLEMENT' })}>看积分和关系卡</PrimaryButton>
       </div>
     </section>
   </GamePage>
@@ -270,17 +282,14 @@ export default function GameApp() {
     switch (state.phase) {
       case 'landing': return <Landing state={state} onStart={() => dispatch({ type: 'START' })} onRules={() => setRulesOpen(true)} />
       case 'lobby': return <Lobby state={state} onReady={() => dispatch({ type: 'READY' })} />
-      case 'reading': return <Reading state={state} onNext={() => dispatch({ type: 'ADVANCE', from: state.phase })} />
+      case 'reading': return <Reading state={state} />
       case 'round1Write': return <WritingScreen state={state} round={1} dispatch={dispatch} />
-      case 'round1Public': return <PublicScreen state={state} round={1} dispatch={dispatch} />
-      case 'round1Vote': return <VoteScreen state={state} ballot="round1Identity" dispatch={dispatch} />
+      case 'round1Vote': return <VoteScreen key="round1Identity" state={state} ballot="round1Identity" dispatch={dispatch} />
       case 'round2Write': return <WritingScreen state={state} round={2} dispatch={dispatch} />
-      case 'round2Public': return <PublicScreen state={state} round={2} dispatch={dispatch} />
-      case 'round2Vote': return <VoteScreen state={state} ballot="round2Quality" dispatch={dispatch} />
+      case 'round2Vote': return <VoteScreen key="round2Quality" state={state} ballot="round2Quality" dispatch={dispatch} />
       case 'round3Write': return <WritingScreen state={state} round={3} dispatch={dispatch} />
-      case 'round3Public': return <PublicScreen state={state} round={3} dispatch={dispatch} />
-      case 'round3QualityVote': return <VoteScreen state={state} ballot="round3Quality" dispatch={dispatch} />
-      case 'finalIdentityVote': return <VoteScreen state={state} ballot="finalIdentity" dispatch={dispatch} />
+      case 'round3QualityVote': return <VoteScreen key="round3Quality" state={state} ballot="round3Quality" dispatch={dispatch} />
+      case 'finalIdentityVote': return <VoteScreen key="finalIdentity" state={state} ballot="finalIdentity" dispatch={dispatch} />
       case 'reveal': return <Reveal state={state} dispatch={dispatch} />
       case 'settlement': return <Settlement state={state} dispatch={dispatch} />
     }
@@ -291,6 +300,6 @@ export default function GameApp() {
     {screen}
     {state.notice && <div className="toast" role="status">{state.notice}</div>}
     {rulesOpen && <RulesModal onClose={() => setRulesOpen(false)} />}
-    <DemoControls phase={state.phase} seconds={state.secondsLeft} paused={state.paused} speed={state.speed} onPause={() => dispatch({ type: 'TOGGLE_PAUSE' })} onSpeed={() => dispatch({ type: 'TOGGLE_SPEED' })} onNext={() => dispatch({ type: 'ADVANCE', from: state.phase })} onReset={() => dispatch({ type: 'RESET' })} />
+    <DemoControls phase={state.phase} seconds={state.secondsLeft} paused={state.paused} speed={state.speed} onPause={() => dispatch({ type: 'TOGGLE_PAUSE' })} onSpeed={() => dispatch({ type: 'TOGGLE_SPEED' })} onEnd={() => dispatch({ type: 'PHASE_EXPIRED', from: state.phase })} onReset={() => dispatch({ type: 'RESET' })} />
   </>
 }

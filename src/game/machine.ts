@@ -1,15 +1,15 @@
-import { PHASE_SECONDS, SAMPLE_SCRIPTED_BALLOTS, SCRIPTED_SUBMISSIONS, SEATS } from './data'
+import { PHASE_SECONDS, SAMPLE_SCRIPTED_BALLOTS, SCRIPTED_SUBMISSIONS } from './data'
 import { validateSubmission } from './graphemes'
 import type { BallotType, GamePhase, GameState, OutfitId, RoundNumber, SeatId } from './types'
 
 export type GameAction =
   | { type: 'START' }
   | { type: 'READY' }
-  | { type: 'ADVANCE'; from: GamePhase }
+  | { type: 'PHASE_EXPIRED'; from: GamePhase }
+  | { type: 'SHOW_SETTLEMENT' }
   | { type: 'DRAFT'; round: RoundNumber; value: string }
   | { type: 'SUBMIT'; round: RoundNumber }
-  | { type: 'SELECT'; ballot: BallotType; seat: SeatId }
-  | { type: 'LOCK_VOTE'; ballot: BallotType }
+  | { type: 'CAST_VOTE'; ballot: BallotType; seat: SeatId }
   | { type: 'TOGGLE_PAUSE' }
   | { type: 'TOGGLE_SPEED' }
   | { type: 'TICK' }
@@ -53,7 +53,7 @@ export function createGame(rematchIndex = 0, phase: GamePhase = 'landing'): Game
   delete ballots.finalIdentity[layout.userSeat]
 
   return {
-    version: 1,
+    version: 2,
     gameId: newId(rematchIndex),
     rematchIndex,
     phase,
@@ -63,7 +63,6 @@ export function createGame(rematchIndex = 0, phase: GamePhase = 'landing'): Game
     submissions,
     drafts: { 1: '', 2: '', 3: '' },
     ballots,
-    selections: {},
     paused: false,
     speed: 1,
     secondsLeft: PHASE_SECONDS[phase],
@@ -87,19 +86,27 @@ function requiredActionComplete(state: GameState): boolean {
 
 function missingActionMessage(state: GameState): string {
   if (state.phase === 'round1Write' || state.phase === 'round2Write' || state.phase === 'round3Write') return '请先提交本轮内容。'
-  if (state.phase === 'round1Vote' || state.phase === 'round2Vote' || state.phase === 'round3QualityVote' || state.phase === 'finalIdentityVote') return '请先确认本轮投票。'
+  if (state.phase === 'round1Vote' || state.phase === 'round2Vote' || state.phase === 'round3QualityVote' || state.phase === 'finalIdentityVote') return '请先完成本轮投票。'
   return '请先完成当前操作。'
 }
 
 function nextPhase(phase: GamePhase): GamePhase {
   const map: Partial<Record<GamePhase, GamePhase>> = {
-    reading: 'round1Write', round1Write: 'round1Public', round1Public: 'round1Vote', round1Vote: 'round2Write', round2Write: 'round2Public', round2Public: 'round2Vote', round2Vote: 'round3Write', round3Write: 'round3Public', round3Public: 'round3QualityVote', round3QualityVote: 'finalIdentityVote', finalIdentityVote: 'reveal', reveal: 'settlement',
+    reading: 'round1Write', round1Write: 'round1Vote', round1Vote: 'round2Write', round2Write: 'round2Vote', round2Vote: 'round3Write', round3Write: 'round3QualityVote', round3QualityVote: 'finalIdentityVote', finalIdentityVote: 'reveal', reveal: 'settlement',
   }
   return map[phase] ?? phase
 }
 
 function move(state: GameState, phase: GamePhase): GameState {
   return { ...state, phase, secondsLeft: PHASE_SECONDS[phase], graceUsed: false, notice: undefined, settled: phase === 'settlement' ? true : state.settled }
+}
+
+function expirePhase(state: GameState): GameState {
+  if (state.phase === 'landing' || state.phase === 'lobby' || state.phase === 'settlement') return state
+  if (state.phase === 'reveal') return { ...state, secondsLeft: 0 }
+  if (requiredActionComplete(state)) return move(state, nextPhase(state.phase))
+  if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '还没有完成当前操作，再给你 10 秒。' }
+  return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '10 秒结束时仍未提交或投票，本局不计分，也不会生成关系卡。', phase: 'settlement', settled: true }
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -115,34 +122,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (error) return { ...state, notice: error }
       return { ...state, submissions: { ...state.submissions, [action.round]: { ...state.submissions[action.round], [state.userSeat]: state.drafts[action.round] } }, notice: undefined }
     }
-    case 'SELECT': {
+    case 'CAST_VOTE': {
       if (state.phase !== phaseByBallot[action.ballot]) return state
       if (action.seat === state.userSeat) return { ...state, notice: '不能给自己的席位投票。' }
       if (state.ballots[action.ballot][state.userSeat]) return state
-      return { ...state, selections: { ...state.selections, [action.ballot]: action.seat }, notice: undefined }
+      return { ...state, ballots: { ...state.ballots, [action.ballot]: { ...state.ballots[action.ballot], [state.userSeat]: action.seat } }, notice: undefined }
     }
-    case 'LOCK_VOTE': {
-      if (state.phase !== phaseByBallot[action.ballot]) return state
-      const target = state.selections[action.ballot]
-      if (!target) return { ...state, notice: '请先选择一个其他席位。' }
-      if (target === state.userSeat) return { ...state, notice: '不能给自己的席位投票。' }
-      if (state.ballots[action.ballot][state.userSeat]) return state
-      return { ...state, ballots: { ...state.ballots, [action.ballot]: { ...state.ballots[action.ballot], [state.userSeat]: target } }, notice: `已确认：席位 ${target}。` }
-    }
-    case 'ADVANCE': {
+    case 'PHASE_EXPIRED': {
       if (state.phase !== action.from) return state
       if (!requiredActionComplete(state)) return { ...state, notice: missingActionMessage(state) }
-      return move(state, nextPhase(state.phase))
+      return expirePhase({ ...state, secondsLeft: 0 })
     }
+    case 'SHOW_SETTLEMENT': return state.phase === 'reveal' ? move(state, 'settlement') : state
     case 'TOGGLE_PAUSE': return { ...state, paused: !state.paused }
     case 'TOGGLE_SPEED': return { ...state, speed: state.speed === 1 ? 5 : 1 }
     case 'TICK': {
-      if (state.paused || state.secondsLeft <= 0 || state.phase === 'landing' || state.phase === 'lobby') return state
+      if (state.paused || state.secondsLeft <= 0 || state.phase === 'landing' || state.phase === 'lobby' || state.phase === 'settlement') return state
       const next = Math.max(0, state.secondsLeft - state.speed)
       if (next > 0) return { ...state, secondsLeft: next }
-      if (requiredActionComplete(state)) return { ...state, secondsLeft: 0 }
-      if (!state.graceUsed) return { ...state, secondsLeft: 10, graceUsed: true, notice: '还没有完成当前操作，再给你 10 秒。' }
-      return { ...state, secondsLeft: 0, gameValid: false, invalidReason: '10 秒结束时仍未提交或投票，本局不计分，也不会生成关系卡。', phase: 'settlement' }
+      return expirePhase({ ...state, secondsLeft: 0 })
     }
     case 'RESET': return createGame(0, 'landing')
     case 'REMATCH': return state.phase === 'settlement' ? move(createGame(state.rematchIndex + 1, 'lobby'), 'lobby') : state
@@ -152,18 +150,5 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 export function completeBallots(state: GameState) {
-  const result = structuredClone(state.ballots)
-  const user = state.userSeat
-  for (const key of Object.keys(result) as BallotType[]) {
-    if (!result[key][user] && state.selections[key]) result[key][user] = state.selections[key]
-  }
-  return result
-}
-
-export function phaseNeedsAction(state: GameState) {
-  return !requiredActionComplete(state)
-}
-
-export function targetOptions(userSeat: SeatId) {
-  return SEATS.filter(seat => seat !== userSeat)
+  return structuredClone(state.ballots)
 }

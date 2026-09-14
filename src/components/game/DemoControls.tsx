@@ -10,7 +10,7 @@ interface DemoControlsProps {
   speed: 1 | 5
   onPause: () => void
   onSpeed: () => void
-  onNext: () => void
+  onEnd: () => void
   onReset: () => void
 }
 
@@ -27,10 +27,10 @@ export function DemoControls(props: DemoControlsProps) {
         <div className="demo-buttons">
           <button onClick={props.onPause}>{props.paused ? <Play size={15} /> : <Pause size={15} />}{props.paused ? '继续' : '暂停'}</button>
           <button onClick={props.onSpeed}><FastForward size={15} />{props.speed}×</button>
-          <button onClick={props.onNext}><SkipForward size={15} />下一阶段</button>
+          {props.phase !== 'reveal' && <button onClick={props.onEnd}><SkipForward size={15} />结束本阶段</button>}
           <button onClick={props.onReset}><RotateCcw size={15} />重置</button>
         </div>
-        <p>快进不会跳过你必须完成的提交或投票。</p>
+        <p>这里模拟服务端计时；缺少提交或投票时不能结束本阶段。</p>
       </div>}
     </aside>
   )

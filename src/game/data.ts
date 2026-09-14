@@ -31,17 +31,13 @@ export const POST = {
   copyPrefix: '补充资料：回答提到中国博士总数约 120 万，而驴存栏从千万头级别降到约 120 万。我想问：',
 }
 
-export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; task: string; hints: string[]; placeholder: string; lockedNext: string; publicTitle: string; publicDescription: string; publicNext: string }> = {
+export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; task: string; hints: string[]; placeholder: string }> = {
   1: {
     kicker: '第一轮 · 全员装人机',
     title: '先把自己写得像 AI',
     task: '围绕这篇帖子，写一条刻意像 AI 的评论。',
     hints: ['综合评估……', '建议结合……', '从多个维度来看……'],
     placeholder: '写一句有点“标准答案味”的话……',
-    lockedNext: '查看四条评论',
-    publicTitle: '四条“AI 味”评论已公开',
-    publicDescription: '先看完四条，再猜哪一席真的由 AI 控制。',
-    publicNext: '猜谁是 AI',
   },
   2: {
     kicker: '第二轮 · 这次认真说',
@@ -49,10 +45,6 @@ export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; ta
     task: '如果这条评论真的留在帖子下面，你会说什么？',
     hints: ['我在意的是……', '容易被忽略的是……', '如果是我，我会……'],
     placeholder: '把你真正想说的话写下来……',
-    lockedNext: '查看四条评论',
-    publicTitle: '四条评论已公开',
-    publicDescription: '这轮只看内容：哪一条最值得点赞？',
-    publicNext: '选一条想点赞的评论',
   },
   3: {
     kicker: '第三轮 · 这问题值得问',
@@ -60,10 +52,6 @@ export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; ta
     task: '根据新条件，只问一个可能改变你判断的问题。',
     hints: ['这个条件稳定吗？', '还有什么成本没算？', '如果情况变化呢？'],
     placeholder: '写一个值得题主回应的问题……',
-    lockedNext: '查看四个问题',
-    publicTitle: '四个问题已公开',
-    publicDescription: '先选一个最想让题主回答的问题，下一页再猜谁是 AI。',
-    publicNext: '选一个想回答的问题',
   },
 }
 
@@ -89,11 +77,11 @@ export const SCRIPTED_SUBMISSIONS: Record<RoundNumber, Record<SeatId, string>> =
   },
 }
 
-export const VOTE_COPY: Record<BallotType, { title: string; subtitle: string; round: RoundNumber; button: string; next: string }> = {
-  round1Identity: { title: '第一轮，你觉得谁是 AI？', subtitle: '选一个其他席位。确认前可以改，确认后锁定。', round: 1, button: '确认指认', next: '进入第二轮' },
-  round2Quality: { title: '哪条评论最值得你点赞？', subtitle: '这一票只看内容，不猜身份。', round: 2, button: '确认点赞', next: '进入第三轮' },
-  round3Quality: { title: '你最想让题主回答哪个问题？', subtitle: '先选问题；下一页再猜 AI。', round: 3, button: '确认选择', next: '最后一次，猜谁是 AI' },
-  finalIdentity: { title: '最后一次，你觉得谁是 AI？', subtitle: '确认后将揭晓身份。', round: 3, button: '确认最终选择', next: '揭晓谁是 AI' },
+export const VOTE_COPY: Record<BallotType, { title: string; subtitle: string; round: RoundNumber }> = {
+  round1Identity: { title: '谁是 AI？点选一位。', subtitle: '点选后不可更改。', round: 1 },
+  round2Quality: { title: '哪条评论最值得点赞？', subtitle: '点选后不可更改。', round: 2 },
+  round3Quality: { title: '哪个问题最值得回应？', subtitle: '点选后不可更改。', round: 3 },
+  finalIdentity: { title: '最后一次，你觉得谁是 AI？', subtitle: '点选后不可更改。', round: 3 },
 }
 
 export const SAMPLE_SCRIPTED_BALLOTS: Record<BallotType, Record<SeatId, SeatId>> = {
@@ -108,21 +96,18 @@ export const PHASE_SECONDS: Record<GamePhase, number> = {
   lobby: 0,
   reading: 30,
   round1Write: 40,
-  round1Public: 20,
-  round1Vote: 20,
+  round1Vote: 40,
   round2Write: 45,
-  round2Public: 20,
-  round2Vote: 20,
+  round2Vote: 40,
   round3Write: 45,
-  round3Public: 20,
-  round3QualityVote: 20,
+  round3QualityVote: 40,
   finalIdentityVote: 20,
   reveal: 10,
   settlement: 35,
 }
 
 export const PHASE_LABELS: Record<GamePhase, string> = {
-  landing: '活动首页', lobby: '对局准备', reading: '阅读帖子', round1Write: '第一轮写作', round1Public: '第一轮公开', round1Vote: '第一轮猜 AI', round2Write: '第二轮写作', round2Public: '第二轮公开', round2Vote: '第二轮选评论', round3Write: '第三轮提问', round3Public: '第三轮公开', round3QualityVote: '第三轮选问题', finalIdentityVote: '最终猜 AI', reveal: '身份揭晓', settlement: '本局结算',
+  landing: '活动首页', lobby: '对局准备', reading: '阅读帖子', round1Write: '第一轮写作', round1Vote: '第一轮猜 AI', round2Write: '第二轮写作', round2Vote: '第二轮选评论', round3Write: '第三轮提问', round3QualityVote: '第三轮选问题', finalIdentityVote: '最终猜 AI', reveal: '身份揭晓', settlement: '本局结算',
 }
 
-export const PHASE_ORDER: GamePhase[] = ['lobby', 'reading', 'round1Write', 'round1Public', 'round1Vote', 'round2Write', 'round2Public', 'round2Vote', 'round3Write', 'round3Public', 'round3QualityVote', 'finalIdentityVote', 'reveal', 'settlement']
+export const PHASE_ORDER: GamePhase[] = ['lobby', 'reading', 'round1Write', 'round1Vote', 'round2Write', 'round2Vote', 'round3Write', 'round3QualityVote', 'finalIdentityVote', 'reveal', 'settlement']

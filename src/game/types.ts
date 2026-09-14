@@ -7,13 +7,10 @@ export type GamePhase =
   | 'lobby'
   | 'reading'
   | 'round1Write'
-  | 'round1Public'
   | 'round1Vote'
   | 'round2Write'
-  | 'round2Public'
   | 'round2Vote'
   | 'round3Write'
-  | 'round3Public'
   | 'round3QualityVote'
   | 'finalIdentityVote'
   | 'reveal'
@@ -29,7 +26,7 @@ export interface GameBallots {
 }
 
 export interface GameState {
-  version: 1
+  version: 2
   gameId: string
   rematchIndex: number
   phase: GamePhase
@@ -39,7 +36,6 @@ export interface GameState {
   submissions: Record<RoundNumber, Partial<Record<SeatId, string>>>
   drafts: Record<RoundNumber, string>
   ballots: GameBallots
-  selections: Partial<Record<BallotType, SeatId>>
   paused: boolean
   speed: 1 | 5
   secondsLeft: number

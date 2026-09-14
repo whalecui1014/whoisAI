@@ -400,6 +400,8 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 .reading-card blockquote { margin: 0; padding: 18px 20px; border-left: 3px solid #dfe3e9; color: #3d4655; background: #fafbfc; }
 .reading-note { display: flex; align-items: center; gap: 9px; margin: 20px 0; color: #68748a; font-size: 13px; }
 .reading-note svg { color: var(--blue); }
+.auto-stage-note { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 12px 14px; border-radius: 4px; color: #566177; background: #f6f7f9; font-size: 13px; }
+.auto-stage-note svg { color: var(--blue); }
 
 .round-heading > p { margin: 9px 0 0; color: #5c667a; }
 .tone-shift { display: flex; align-items: center; gap: 9px; margin-top: 20px; padding: 12px 14px; border-radius: 4px; color: #345a49; background: #f1faf5; }
@@ -424,14 +426,24 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
 
 .submission-author { display: flex; align-items: center; justify-content: space-between; }
 .submission-card.selected { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(23,114,246,.12); background: #fbfdff; }
+.submission-card.submitting { border-color: #9ac1ff; background: #fbfdff; }
 .submission-card.self { cursor: not-allowed; background: #fafafa; }
 .submission-card .character-label { display: none; }
 .submission-card > p { margin: 14px 0 26px; color: #303846; line-height: 1.7; }
 .select-indicator { display: grid; width: 24px; height: 24px; place-items: center; border: 1px solid #d7dce4; border-radius: 50%; color: #fff; }
 .submission-card.selected .select-indicator { border-color: var(--blue); background: var(--blue); }
 .self-chip { position: absolute; bottom: 14px; left: 16px; color: var(--muted); font-size: 11px; }
+.vote-chip { position: absolute; right: 16px; bottom: 14px; border-radius: 999px; padding: 2px 9px; color: #fff; background: var(--blue); font-size: 11px; }
+.vote-chip.pending { color: #386daf; background: #eaf3ff; }
 .vote-reminder > div { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: #68748a; font-size: 12px; }
-.vote-locked { display: inline-flex; align-items: center; gap: 6px; margin-right: auto; color: #226648; }
+.vote-status { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 12px 14px; border: 1px solid #dfe3e9; border-radius: 4px; color: #566177; background: #fafbfc; font-size: 13px; }
+.vote-status.success { color: #226648; border-color: #bce3d2; background: #f4fbf7; }
+.vote-status.error { color: #a04343; border-color: #f0caca; background: #fff6f6; }
+.final-review-card { min-height: 310px; }
+.final-round-review { margin-top: 13px; }
+.final-round-review > div { padding: 9px 0; border-top: 1px solid #eef0f3; }
+.final-round-review span { color: var(--blue); font-size: 11px; font-weight: 650; }
+.final-round-review p { margin: 3px 0 0; color: #303846; line-height: 1.6; }
 
 .reveal-card { text-align: center; }
 .reveal-card > h1 { font-size: 34px; }
@@ -571,9 +583,6 @@ button:focus-visible, textarea:focus-visible { outline: 3px solid rgba(23, 114, 
   .relation-drawer { padding: 20px 16px; }
 }
 
-.submission-card.published { cursor: default; }
-.submission-card.published:hover { border-color: #e2e6eb; box-shadow: none; transform: none; }
-.public-screen .submission-card { min-height: 164px; }
 .published-history details > summary { display: flex; align-items: center; justify-content: space-between; color: #445066; }
 .published-history details[open] > summary svg { transform: rotate(180deg); }
 .published-history section { margin-top: 13px; padding-top: 12px; border-top: 1px solid #eef0f3; }
