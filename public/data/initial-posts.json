@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-14T11:57:11.358Z",
+  "posts": [
+    {
+      "id": "zhihu-answer-2039374868626551439",
+      "title": "你见过哪些逗逼的评论/神回复? - 知乎",
+      "text": "有个妈妈在网上问，她要求自己15岁的女儿要每天负责一日三餐，为啥很多人都觉得不合适？\n然后下面有一段回复：\"你要求一个十几岁的孩子会煮个面，炒个家常菜，很正常，但你要求她一个人负责一日三餐所有饭菜，就有点苛刻了，因为毕竟她只是孩子。\n\"看到这里，我觉得是很普通的回复， 直到看见最后一句，堪称神回复：\"而且，你要说清楚，是因为她十五岁，所以要做菜，还是因为她是女孩，所以要做菜?\"",
+      "textKind": "excerpt",
+      "sourceUrl": "https://www.zhihu.com/question/31185891/answer/2039374868626551439?utm_medium=openapi_platform&utm_source=cf621feb3f2d",
+      "author": "jessica",
+      "commentCount": 81,
+      "voteCount": 352,
+      "readingSeconds": 41,
+      "category": "opinion",
+      "selection": {
+        "ruleVersion": "short-light-v1",
+        "mode": "rules",
+        "reason": "通过简化规则：短文本、有观点/知识/故事特征，未命中排除项；未经语义核验"
+      }
+    }
+  ]
+}

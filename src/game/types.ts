@@ -1,3 +1,5 @@
+import type { InitialPost } from './posts'
+
 export type SeatId = 'A' | 'B' | 'C' | 'D'
 export type OutfitId = 'blue' | 'green' | 'yellow' | 'purple'
 export type RoundNumber = 1 | 2 | 3
@@ -28,6 +30,7 @@ export interface GameBallots {
 export interface GameState {
   version: 2
   gameId: string
+  post: InitialPost
   rematchIndex: number
   phase: GamePhase
   userSeat: SeatId

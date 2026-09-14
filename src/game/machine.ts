@@ -1,5 +1,6 @@
 import { PHASE_SECONDS, SAMPLE_SCRIPTED_BALLOTS, SCRIPTED_SUBMISSIONS } from './data'
 import { validateSubmission } from './graphemes'
+import { pickPost, type InitialPost } from './posts'
 import type { BallotType, GamePhase, GameState, OutfitId, RoundNumber, SeatId } from './types'
 
 export type GameAction =
@@ -30,7 +31,7 @@ function newId(index: number) {
   return `game-${Date.now().toString(36)}-${index}`
 }
 
-export function createGame(rematchIndex = 0, phase: GamePhase = 'landing'): GameState {
+export function createGame(rematchIndex = 0, phase: GamePhase = 'landing', post: InitialPost = pickPost()): GameState {
   const layout = layouts[rematchIndex % layouts.length]
   const submissions = {
     1: { ...SCRIPTED_SUBMISSIONS[1] },
@@ -55,6 +56,7 @@ export function createGame(rematchIndex = 0, phase: GamePhase = 'landing'): Game
   return {
     version: 2,
     gameId: newId(rematchIndex),
+    post: structuredClone(post),
     rematchIndex,
     phase,
     userSeat: layout.userSeat,
@@ -98,7 +100,7 @@ function nextPhase(phase: GamePhase): GamePhase {
 }
 
 function move(state: GameState, phase: GamePhase): GameState {
-  return { ...state, phase, secondsLeft: PHASE_SECONDS[phase], graceUsed: false, notice: undefined, settled: phase === 'settlement' ? true : state.settled }
+  return { ...state, phase, secondsLeft: phase === 'reading' ? Math.max(PHASE_SECONDS.reading, state.post.readingSeconds) : PHASE_SECONDS[phase], graceUsed: false, notice: undefined, settled: phase === 'settlement' ? true : state.settled }
 }
 
 function expirePhase(state: GameState): GameState {
@@ -111,7 +113,7 @@ function expirePhase(state: GameState): GameState {
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case 'START': return state.phase === 'landing' ? move(createGame(0, 'lobby'), 'lobby') : state
+    case 'START': return state.phase === 'landing' ? move(createGame(0, 'lobby', state.post), 'lobby') : state
     case 'READY': return state.phase === 'lobby' ? move(state, 'reading') : state
     case 'DRAFT': return state.phase === writePhaseByRound[action.round] && !state.submissions[action.round][state.userSeat]
       ? { ...state, drafts: { ...state.drafts, [action.round]: action.value }, notice: undefined }
@@ -143,7 +145,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return expirePhase({ ...state, secondsLeft: 0 })
     }
     case 'RESET': return createGame(0, 'landing')
-    case 'REMATCH': return state.phase === 'settlement' ? move(createGame(state.rematchIndex + 1, 'lobby'), 'lobby') : state
+    case 'REMATCH': return state.phase === 'settlement' ? move(createGame(state.rematchIndex + 1, 'lobby', pickPost(state.post.id)), 'lobby') : state
     case 'CLEAR_NOTICE': return { ...state, notice: undefined }
     default: return state
   }

@@ -10,6 +10,7 @@ import { localVoteService } from './game/mockService'
 import { generateRelationCards } from './game/relations'
 import { achievementsFor, calculateScores } from './game/scoring'
 import { loadGame, saveGame } from './game/storage'
+import { postSourceLabel, type InitialPost } from './game/posts'
 import type { BallotType, GamePhase, GameState, RelationCardData, RoundNumber, SeatId } from './game/types'
 
 function PrimaryButton({ children, onClick, disabled, className = '' }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; className?: string }) {
@@ -57,8 +58,8 @@ function Landing({ onStart, onRules, state }: { onStart: () => void; onRules: ()
       <div className="hero-characters" aria-label="四个游戏角色"><CharacterGrid state={state} large /></div>
     </section>
     <section className="topic-preview">
-      <div><span>{LANDING_COPY.topicLabel}</span><h3>{POST.title}</h3><p>{POST.sourceType}</p></div>
-      <span className="topic-tag">{POST.tag}</span>
+      <div><span>{LANDING_COPY.topicLabel}</span><h3>{state.post.title}</h3><p>{postSourceLabel(state.post)}</p></div>
+      <span className="topic-tag">{({ opinion: '观点讨论', knowledge: '轻知识', story: '轻松故事' }[state.post.category])}</span>
     </section>
   </main>
 }
@@ -74,7 +75,7 @@ function StageProgress({ phase }: { phase: GamePhase }) {
 }
 
 function Lobby({ state, onReady }: { state: GameState; onReady: () => void }) {
-  return <GamePage state={state} sidebar={<LobbyAside />}>
+  return <GamePage state={state} sidebar={<LobbyAside state={state} />}>
     <section className="content-card lobby-card" data-screen="lobby">
       <span className="eyebrow">开局前</span><h1>认一下你的角色</h1>
       <p className="lead">记住你的字母和衣服，这局不会变。最后揭晓谁是 AI。</p>
@@ -85,12 +86,16 @@ function Lobby({ state, onReady }: { state: GameState; onReady: () => void }) {
   </GamePage>
 }
 
-function LobbyAside() {
-  return <><SidePost /><aside className="side-card"><span className="side-kicker">试玩说明</span><p>本局的 AI 也使用预先写好的内容，没有调用真实模型。刷新后可以接着玩。</p></aside></>
+function LobbyAside({ state }: { state: GameState }) {
+  return <><SidePost post={state.post} /><aside className="side-card"><span className="side-kicker">本局编号</span><strong className="mono">{state.gameId}</strong><p>角色身份为本局预设数据，不代表在线用户或真实模型调用。</p></aside></>
 }
 
-function SidePost({ showCondition = false }: { showCondition?: boolean }) {
-  return <aside className="side-card post-side-card"><span className="side-kicker">本局内容</span><h3>{POST.title}</h3><p>{POST.excerpt}</p><div className="source-chip"><FileText size={14} />{POST.sourceType}</div>{showCondition && <div className="condition-mini"><b>补充条件</b>{POST.newCondition}</div>}</aside>
+function PostSource({ post }: { post: InitialPost }) {
+  return <div className="answer-source"><div className="source-avatar">答</div><div><b>{postSourceLabel(post)}</b>{post.sourceUrl ? <><span>{post.author ?? '作者未提供'}{post.commentCount !== null ? ` · ${post.commentCount} 条评论` : ''}{post.voteCount !== null ? ` · ${post.voteCount} 赞同` : ''}</span><a href={post.sourceUrl} target="_blank" rel="noopener noreferrer">查看知乎原回答 ↗</a><span>当前展示文本预计 {post.readingSeconds} 秒读完{post.textKind === 'excerpt' ? ' · 摘录不代表原回答全文' : ''}</span></> : <span>本局原创情境内容，不对应真实作者、赞同数或原帖链接</span>}</div></div>
+}
+
+function SidePost({ post, showCondition = false }: { post: InitialPost; showCondition?: boolean }) {
+  return <aside className="side-card post-side-card"><span className="side-kicker">本局帖子</span><h3>{post.title}</h3><p>{post.text}</p><div className="source-chip"><FileText size={14} />{postSourceLabel(post)}</div>{showCondition && <div className="condition-mini"><b>游戏假设</b>{POST.newCondition}</div>}</aside>
 }
 
 function PublishedHistory({ state, through }: { state: GameState; through: number }) {
@@ -105,9 +110,9 @@ function GamePage({ state, children, sidebar }: { state: GameState; children: Re
 function Reading({ state, onNext }: { state: GameState; onNext: () => void }) {
   return <GamePage state={state} sidebar={<aside className="side-card rules-side"><span className="side-kicker">这局要做什么</span><ol><li><b>装人机</b><span>写得像 AI，再猜一次</span></li><li><b>认真说</b><span>写评论，选一条</span></li><li><b>值得问</b><span>提一个问题，最后猜 AI</span></li></ol><details><summary>展开计分规则 <ChevronDown size={15} /></summary><p>被真人误认最多 2 分；首轮猜中 2 分；评论与问题各最多 4 分；最终猜中 3 分。</p></details></aside>}>
     <article className="content-card reading-card" data-screen="reading">
-      <span className="eyebrow">先看看这道题</span><h1>{POST.title}</h1>
-      <div className="answer-source"><div className="source-avatar">答</div><div><b>这篇回答说了什么</b><span>{POST.sourceDescription}</span></div></div>
-      <blockquote>{POST.excerpt}</blockquote>
+      <span className="eyebrow">先看看这道题</span><h1>{state.post.title}</h1>
+      <PostSource post={state.post} />
+      <blockquote>{state.post.text}</blockquote>
       <div className="reading-note"><LockKeyhole size={18} /><span>补充条件会在第三轮出现。</span></div>
       <PrimaryButton onClick={onNext}>开始第一轮</PrimaryButton>
     </article>
@@ -124,7 +129,7 @@ function WritingScreen({ state, round, dispatch }: { state: GameState; round: Ro
   const count = countVisibleCharacters(draft)
   const locked = Boolean(state.submissions[round][state.userSeat])
   const error = !locked && draft.length > 0 ? validateSubmission(draft) : null
-  return <GamePage state={state} sidebar={<><SidePost showCondition={round === 3} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card hint-card"><span className="side-kicker">不知道怎么写？</span>{ROUND_COPY[round].hints.map(item => <span key={item}>{item}</span>)}</aside></>}>
+  return <GamePage state={state} sidebar={<><SidePost post={state.post} showCondition={round === 3} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card hint-card"><span className="side-kicker">不知道怎么写？</span>{ROUND_COPY[round].hints.map(item => <span key={item}>{item}</span>)}</aside></>}>
     <section className="content-card writing-card" data-screen={`round-${round}-write`}>
       <RoundHeader round={round} />
       {round === 2 && <div className="tone-shift"><MessageCircle size={18} /><span><b>反串结束。</b>这轮只看评论本身。</span></div>}
@@ -174,7 +179,7 @@ function VoteScreen({ state, ballot, dispatch }: { state: GameState; ballot: Bal
     }
   }
 
-  return <GamePage state={state} sidebar={<><SidePost showCondition={meta.round === 3} />{!finalReview && <PublishedHistory state={state} through={meta.round - 1} />}<aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />点选就投票，投出后不能改</div><div><Users size={15} />不能投自己</div></aside></>}>
+  return <GamePage state={state} sidebar={<><SidePost post={state.post} showCondition={meta.round === 3} />{!finalReview && <PublishedHistory state={state} through={meta.round - 1} />}<aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />点选就投票，投出后不能改</div><div><Users size={15} />不能投自己</div></aside></>}>
     <section className="content-card vote-screen" data-screen={ballot}>
       <header className="round-heading"><span className="eyebrow">{ROUND_COPY[meta.round].kicker} · 投票</span><h1>{meta.title}</h1><p>{meta.subtitle}</p></header>
       <div className="submission-grid">
@@ -215,7 +220,7 @@ function Reveal({ state, dispatch }: { state: GameState; dispatch: React.Dispatc
       <CharacterGrid state={state} large reveal />
       <p className="muted-copy">大家仍然使用本局代号，不会公开个人资料。</p>
       <div className="reveal-actions">
-        <a className="secondary-button source-link" href={POST.sourceUrl}>去知乎看原帖<ExternalLink size={16} /></a>
+        <a className="secondary-button source-link" href={state.post.sourceUrl ?? undefined}>去知乎看原帖<ExternalLink size={16} /></a>
         <PrimaryButton onClick={() => dispatch({ type: 'SHOW_SETTLEMENT' })}>看看这局成绩</PrimaryButton>
       </div>
     </section>
@@ -282,7 +287,7 @@ function Settlement({ state, dispatch }: { state: GameState; dispatch: React.Dis
       <section className="content-card achievements-section"><div className="section-title"><div><span className="eyebrow">本局表现</span><h2>本局成就</h2></div><span className="index-note">入机指数：再玩几局就能看到了（已完成 {validGameCount}/10 局）</span></div><div className="achievement-list">{achievements.map((item, index) => <div key={item}><span>{index === achievements.length - 1 ? <Crown size={21} /> : <Trophy size={19} />}</span><b>{item}</b></div>)}</div></section>
       <section className="content-card relations-section"><div className="section-title"><h2>{relationTitle}</h2></div>{relations.length ? <div className="relation-grid">{relations.map(card => <article key={card.id} className={`relation-card relation-${card.type}`}><div className="relation-people"><Character seat={state.userSeat} outfit={state.outfitBySeat[state.userSeat]} size="small" current /><i /><Character seat={card.otherSeat} outfit={state.outfitBySeat[card.otherSeat]} size="small" /></div><h3>{card.title}</h3><p>{card.detail}</p><button onClick={() => setDrawer(card)}>看看 TA 刚才写了什么</button></article>)}</div> : <div className="neutral-recap">看看大家这局都写了什么</div>}</section>
       <section className="content-card candidates-section"><div className="section-title"><div><span className="eyebrow">你本局写下的内容</span><h2>把这两句带回评论区</h2></div></div><div className="candidate-grid"><article><span>第二轮 · 认真评论</span><p>{state.submissions[2][state.userSeat]}</p><button onClick={() => copyCandidate(2)}>{copied === 2 ? <Check size={16} /> : <Copy size={16} />}{copied === 2 ? '已复制' : '复制我的评论'}</button></article><article><span>第三轮 · 提问</span><p>{POST.copyPrefix}{state.submissions[3][state.userSeat]}</p><small>复制问题时，会附上第三轮的补充信息。</small><button onClick={() => copyCandidate(3)}>{copied === 3 ? <Check size={16} /> : <Copy size={16} />}{copied === 3 ? '已复制' : '复制我的问题'}</button></article></div>{copyError && <p className="field-error">{copyError}</p>}<div className="final-actions"><SecondaryButton onClick={() => setReviewOpen(true)}>回看本题</SecondaryButton><PrimaryButton onClick={() => dispatch({ type: 'REMATCH' })}><RotateCcw size={17} />再来一局</PrimaryButton></div><p className="no-publish"><Clipboard size={14} />复制后，可以去原帖粘贴并自行发布。</p></section>
-    </div>{drawer && <RelationDrawer card={drawer} state={state} onClose={() => setDrawer(null)} />}{reviewOpen && <div className="modal-backdrop" onMouseDown={event => event.target === event.currentTarget && setReviewOpen(false)}><article className="rules-modal review-post" role="dialog" aria-modal="true" aria-label="回看本题"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="关闭回看"><X size={20} /></button><span className="eyebrow">题目回顾</span><h2>{POST.title}</h2><blockquote>{POST.excerpt}</blockquote><div className="new-condition"><span>第三轮补充条件</span><strong>{POST.newCondition}</strong></div><PrimaryButton onClick={() => setReviewOpen(false)}>回到结算</PrimaryButton></article></div>}
+    </div>{drawer && <RelationDrawer card={drawer} state={state} onClose={() => setDrawer(null)} />}{reviewOpen && <div className="modal-backdrop" onMouseDown={event => event.target === event.currentTarget && setReviewOpen(false)}><article className="rules-modal review-post" role="dialog" aria-modal="true" aria-label="回看本题"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="关闭回看"><X size={20} /></button><span className="eyebrow">题目回顾</span><h2>{state.post.title}</h2><blockquote>{state.post.text}</blockquote><div className="new-condition"><span>第三轮补充条件</span><strong>{POST.newCondition}</strong></div><PrimaryButton onClick={() => setReviewOpen(false)}>回到结算</PrimaryButton></article></div>}
   </GamePage>
 }
 

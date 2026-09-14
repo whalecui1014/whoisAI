@@ -1,4 +1,5 @@
 import { createGame } from './machine'
+import { FALLBACK_POST, isInitialPost } from './posts'
 import type { BallotType, GamePhase, GameState, OutfitId, RoundNumber, SeatId } from './types'
 
 export const STORAGE_KEY = 'who-is-ai-v2.6'
@@ -23,6 +24,7 @@ function validPartialSeatMap(value: unknown, valueCheck: (entry: unknown) => boo
 
 export function isGameState(value: unknown): value is GameState {
   if (!isRecord(value) || value.version !== 2 || typeof value.gameId !== 'string' || !value.gameId) return false
+  if (!isInitialPost(value.post)) return false
   if (!phases.includes(value.phase as GamePhase) || !isSeat(value.userSeat) || !isSeat(value.aiSeat)) return false
   if (!Number.isInteger(value.rematchIndex) || !Number.isFinite(value.secondsLeft)) return false
   const outfitBySeat = value.outfitBySeat
@@ -45,7 +47,10 @@ export function loadGame(): GameState {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return createGame()
     const value: unknown = JSON.parse(raw)
+    // Pre-import saves refer to the original demo. Preserve active games, refresh idle previews.
+    if (isRecord(value) && value.version === 1 && value.post === undefined) value.post = structuredClone(FALLBACK_POST)
     if (!isGameState(value)) return createGame()
+    if (value.phase === 'landing') return createGame()
     return value
   } catch {
     return createGame()
