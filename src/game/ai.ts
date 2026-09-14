@@ -1,54 +1,73 @@
+import { PRESET_AI_SUBMISSIONS, ROUND_TOPICS, ROUNDS } from './data'
 import { countVisibleCharacters } from './graphemes'
-import type { InitialPost } from './posts'
 import type { GeneratedGameContent, RoundNumber } from './types'
+
+export function presetGameContent(): GeneratedGameContent {
+  return { source: 'preset', submissions: { ...PRESET_AI_SUBMISSIONS } }
+}
 
 function isGeneratedContent(value: unknown): value is GeneratedGameContent {
   if (!value || typeof value !== 'object') return false
-  const data = value as { scenario?: unknown; submissions?: Record<string, unknown> }
-  if (typeof data.scenario !== 'string' || data.scenario.trim().length < 4 || countVisibleCharacters(data.scenario) > 50) return false
+  const data = value as { source?: unknown; submissions?: Record<string, unknown> }
+  if (data.source !== 'model' && data.source !== 'preset') return false
   if (!data.submissions || typeof data.submissions !== 'object') return false
-  return ([1, 2, 3] as RoundNumber[]).every(round => {
+  return ROUNDS.every(round => {
     const content = data.submissions?.[round]
-    return typeof content === 'string' && content.trim().length > 0 && countVisibleCharacters(content) <= 50
+    return typeof content === 'string'
+      && content.trim().length > 0
+      && countVisibleCharacters(content) <= ROUND_TOPICS[round].maxChars
   })
 }
 
-export async function generateGameContent(post: InitialPost, signal?: AbortSignal): Promise<GeneratedGameContent> {
+export async function generateGameContent(signal?: AbortSignal): Promise<GeneratedGameContent> {
   const model = import.meta.env.VITE_AI_MODEL
-  if (!model) throw new Error('请先在 .env 中配置 VITE_AI_MODEL。')
-  const system = `你是中文创意社交游戏《谁是人机》的内容导演。根据初始帖子，为隐藏 AI 席位生成三轮内容和第三轮追加情景。
-只输出 JSON，键必须是 scenario、round1、round2、round3，不要 Markdown。每项不超过 50 个可见字符。
-scenario 必须是 15—35 字的陈述句，不能是问句。它要与题干紧密相关，只增加一个具体变量（如时刻、地点或人物处境），同时保留多种提问方向；不能宽泛成“问一个关于咖啡的问题”，也不能堆叠条件限定唯一问法。例如咖啡题可写“这杯咖啡是在凌晨加班结束后喝到的。”
-round1 故意有一点标准 AI 答案味；round2 自然、真诚、有具体观察；round3 结合 scenario 提出新颖、值得题主回答的问题。
-不要捏造事实，不要提及游戏规则或自己是 AI。`
+  if (!model) return presetGameContent()
+
+  const system = `你是中文游戏《谁是人机》中隐藏的 AI 作者。请为三个互不相关的轮次各写一条内容。
+只输出 JSON，键必须是 round1、round2、round3，不要 Markdown。
+第一轮题目“为什么《牛来》能申请到龙标？”：写一条不超过50字的评论，语气克制、工整；只回应题目，不把影片内容或审核原因写成已核实事实。
+第二轮题目“iPhone duo 的 duo 有什么含义？”：写一条不超过50字的评论，给出有依据且谨慎的词义解释；不要编造产品功能、官方命名意图或词源。
+第三轮主题“#西游记”：只提一个不超过30字的问题，尝试玩梗，可以略老、略显用力；不要分析梗，不要自曝身份。
+三条内容不要故意写成相同长度或相同句式，也不要提及游戏规则。`
+
   const response = await fetch('/api/ai/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model,
       stream: false,
-      temperature: 0.9,
+      temperature: 0.85,
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: JSON.stringify({ title: post.title, text: post.text, category: post.category }) },
+        { role: 'user', content: '请按三个题目分别生成本局内容。' },
       ],
     }),
     signal,
   })
+
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new Error(`模型请求失败（HTTP ${response.status}），请检查 API 配置。`)
   const content = payload && typeof payload === 'object'
     ? (payload as { choices?: Array<{ message?: { content?: unknown } }> }).choices?.[0]?.message?.content
     : undefined
   if (typeof content !== 'string') throw new Error('模型未返回文本内容。')
+
   let parsed: unknown
   try {
     parsed = JSON.parse(content.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, ''))
   } catch {
     throw new Error('模型未返回有效 JSON，请重试。')
   }
-  const raw = parsed as { scenario?: unknown; round1?: unknown; round2?: unknown; round3?: unknown }
-  const result = { scenario: raw.scenario, submissions: { 1: raw.round1, 2: raw.round2, 3: raw.round3 } }
-  if (!isGeneratedContent(result)) throw new Error('模型返回的内容格式不符合游戏要求，请重试。')
+
+  const raw = parsed as { round1?: unknown; round2?: unknown; round3?: unknown }
+  const result: GeneratedGameContent = {
+    source: 'model',
+    submissions: { 1: raw.round1 as string, 2: raw.round2 as string, 3: raw.round3 as string },
+  }
+  if (!isGeneratedContent(result)) throw new Error('模型返回的内容格式不符合 50/50/30 字限制，请重试。')
   return result
+}
+
+export function validateGeneratedSubmission(round: RoundNumber, value: string): boolean {
+  return Boolean(value.trim()) && countVisibleCharacters(value) <= ROUND_TOPICS[round].maxChars
 }

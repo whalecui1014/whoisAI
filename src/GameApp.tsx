@@ -1,18 +1,16 @@
-import { Check, ChevronDown, Clipboard, Clock3, Copy, Crown, ExternalLink, Eye, FileText, Info, LockKeyhole, MessageCircle, RotateCcw, Sparkles, Trophy, Users, X } from 'lucide-react'
+import { Check, ChevronDown, Clipboard, Clock3, Copy, Crown, Eye, FileText, Info, LockKeyhole, RotateCcw, Sparkles, Trophy, Users, X } from 'lucide-react'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { Character } from './components/game/Character'
 import { DemoControls } from './components/game/DemoControls'
 import { GameHeader } from './components/game/GameHeader'
-import { LANDING_COPY, PHASE_ORDER, ROUND_COPY, SEATS, VOTE_COPY } from './game/data'
+import { CONTENT_LABELS, LANDING_COPY, PHASE_ORDER, ROUNDS, ROUND_TOPICS, SEATS } from './game/data'
 import { generateGameContent } from './game/ai'
 import { countVisibleCharacters, validateSubmission } from './game/graphemes'
-import { completeBallots, gameReducer } from './game/machine'
+import { completeBallots, contentForAuthor, gameReducer } from './game/machine'
 import { localVoteService } from './game/mockService'
-import { generateRelationCards } from './game/relations'
-import { achievementsFor, calculateScores } from './game/scoring'
+import { achievementsFor, calculateScores, humanSeats } from './game/scoring'
 import { loadGame, saveGame } from './game/storage'
-import { postSourceLabel, type InitialPost } from './game/posts'
-import type { BallotType, GamePhase, GameState, RelationCardData, RoundNumber, SeatId } from './game/types'
+import type { ContentId, GamePhase, GameState, RoundNumber, SeatId } from './game/types'
 
 function PrimaryButton({ children, onClick, disabled, className = '' }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; className?: string }) {
   return <button className={`primary-button ${className}`} onClick={onClick} disabled={disabled}>{children}</button>
@@ -26,23 +24,23 @@ function RulesModal({ onClose }: { onClose: () => void }) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
     <section className="rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title">
       <button className="modal-close" onClick={onClose} aria-label="关闭规则"><X size={20} /></button>
-      <span className="eyebrow">约 6 分钟 · 3 位真人，1 个 AI</span>
-      <h2 id="rules-title">三轮，找出谁是人机</h2>
+      <span className="eyebrow">约 9 分钟 · 3 位真人，1 个 AI</span>
+      <h2 id="rules-title">三轮，都来猜 AI</h2>
       <ol className="rule-steps">
-        <li><strong>1</strong><div><b>全员装人机</b><span>故意写得像 AI，看看能骗过谁，再猜谁是真正的 AI。</span></div></li>
-        <li><strong>2</strong><div><b>这次认真说</b><span>正常评论，只选你最想点赞的一条。</span></div></li>
-        <li><strong>3</strong><div><b>这问题值得问</b><span>看完补充信息，提一个问题，选出你最想让题主回答的，再猜一次 AI。</span></div></li>
+        <li><strong>1</strong><div><b>评论《牛来》</b><span>可以装得像 AI，也可以顺着题目玩梗；写完猜一次。</span></div></li>
+        <li><strong>2</strong><div><b>聊聊 duo</b><span>解释、评论或质疑都可以；内容重新打乱，再猜一次。</span></div></li>
+        <li><strong>3</strong><div><b>围绕 #西游记 提问</b><span>只问一个问题；最后再从四个问题里找出 AI。</span></div></li>
       </ol>
-      <div className="rules-score"><b>最高 15 分</b><span>第一轮，每骗到一位真人 +1 分，猜中 AI +2 分；第二、三轮，你的评论或问题每获一位真人投票 +2 分；最后猜中 AI +3 分。</span></div>
-      <p className="muted-copy">每条最多 50 字，不能投自己。点选卡片就会投票，投出后不能改。最后统一揭晓谁是 AI。</p>
+      <div className="rules-score"><b>每轮最多 5 分，整局满分 15 分</b><span>猜中 AI +2 分；被误认票数最高的真人 +3 分。若正票并列最高，并列者都得 +3 分；没人被误认则不发这 3 分。</span></div>
+      <p className="muted-copy">三轮写作各 120 秒；前两轮最多 50 字，第三轮最多 30 字。每轮只投一票，不能投自己，投出后不能改。</p>
       <PrimaryButton onClick={onClose}>知道了</PrimaryButton>
     </section>
   </div>
 }
 
-function CharacterGrid({ state, large = false, reveal = false }: { state: GameState; large?: boolean; reveal?: boolean }) {
+function CharacterGrid({ state, large = false }: { state: GameState; large?: boolean }) {
   return <div className={`character-grid ${large ? 'large' : ''}`}>
-    {SEATS.map(seat => <Character key={seat} seat={seat} outfit={state.outfitBySeat[seat]} size={large ? 'large' : 'medium'} current={seat === state.userSeat} revealedAi={reveal && seat === state.aiSeat} />)}
+    {SEATS.map(seat => <Character key={seat} seat={seat} outfit={state.outfitBySeat[seat]} size={large ? 'large' : 'medium'} current={seat === state.userSeat} />)}
   </div>
 }
 
@@ -58,223 +56,206 @@ function Landing({ onStart, onRules, state }: { onStart: () => void; onRules: ()
       </div>
       <div className="hero-characters" aria-label="四个游戏角色"><CharacterGrid state={state} large /></div>
     </section>
-    <section className="topic-preview">
-      <div><span>{LANDING_COPY.topicLabel}</span><h3>{state.post.title}</h3><p>{postSourceLabel(state.post)}</p></div>
-      <span className="topic-tag">{({ opinion: '观点讨论', knowledge: '轻知识', story: '轻松故事' }[state.post.category])}</span>
+    <section className="topic-preview topic-preview-multiple">
+      <div className="topic-preview-icon"><FileText size={21} /></div>
+      <div><span>{LANDING_COPY.topicLabel}</span><div className="topic-preview-list">{ROUNDS.map(round => <b key={round}>{round}. {ROUND_TOPICS[round].title}</b>)}</div></div>
+      <span className="topic-tag">三轮三题</span>
     </section>
   </main>
 }
 
 function StageProgress({ phase }: { phase: GamePhase }) {
   const active = PHASE_ORDER.indexOf(phase)
-  const steps = [
-    ['准备', 0], ['看题目', 1], ['第一轮', 2], ['第二轮', 4], ['第三轮', 6], ['揭晓', 9], ['结算', 10],
-  ] as const
+  const steps = [['准备', 0], ['第一轮', 1], ['第二轮', 4], ['第三轮', 7], ['总成绩', 10]] as const
+  const currentStep = steps.reduce((result, [, index], stepIndex) => active >= index ? stepIndex : result, 0)
   return <div className="stage-progress">
-    {steps.map(([label, index], stepIndex) => <div key={label} className={active >= index ? 'done' : ''}><i>{active > index ? <Check size={12} /> : stepIndex + 1}</i><span>{label}</span></div>)}
+    {steps.map(([label], stepIndex) => <div key={label} className={`${stepIndex <= currentStep ? 'done' : ''} ${stepIndex === currentStep ? 'current' : ''}`}><i>{stepIndex < currentStep ? <Check size={12} /> : stepIndex + 1}</i><span>{label}</span></div>)}
   </div>
-}
-
-function Lobby({ state, onReady, onRetry }: { state: GameState; onReady: () => void; onRetry: () => void }) {
-  return <GamePage state={state} sidebar={<LobbyAside state={state} />}>
-    <section className="content-card lobby-card" data-screen="lobby">
-      <span className="eyebrow">开局前</span><h1>认一下你的角色</h1>
-      <p className="lead">记住你的字母和衣服，这局不会变。最后揭晓谁是 AI。</p>
-      <CharacterGrid state={state} large />
-      <div className="solo-notice"><Users size={20} /><div><strong>本局席位说明</strong><span>你控制席位 {state.userSeat}。两个模拟真人席位使用预设内容；隐藏 AI 席位的三轮内容会由模型根据本题生成。</span></div></div>
-      <div className={`ai-prep ${state.aiContentStatus}`}>
-        <Sparkles size={18} />
-        <div><strong>{state.aiContentStatus === 'ready' ? 'AI 内容准备完成' : state.aiContentStatus === 'error' ? 'AI 内容生成失败' : '正在准备本局 AI 内容'}</strong>
-          <span>{state.aiContentStatus === 'ready' ? '三轮评论与第三轮新情景均已绑定当前题干。' : state.aiContentStatus === 'error' ? state.aiContentError : '正在根据初始题干生成，请稍候……'}</span>
-        </div>
-        {state.aiContentStatus === 'error' && <button onClick={onRetry}>重试</button>}
-      </div>
-      <PrimaryButton onClick={onReady} disabled={state.aiContentStatus !== 'ready'}>{state.aiContentStatus === 'ready' ? '准备好了' : '等待 AI 内容'}</PrimaryButton>
-    </section>
-  </GamePage>
-}
-
-function LobbyAside({ state }: { state: GameState }) {
-  return <><SidePost post={state.post} scenario={state.scenario} /><aside className="side-card"><span className="side-kicker">本局编号</span><strong className="mono">{state.gameId}</strong><p>隐藏 AI 的内容由已配置模型生成；另外两席仍是单人 Demo 的模拟玩家。</p></aside></>
-}
-
-function PostSource({ post }: { post: InitialPost }) {
-  return <div className="answer-source"><div className="source-avatar">答</div><div><b>{postSourceLabel(post)}</b><span>{post.author ?? '作者未提供'}{post.commentCount !== null ? ` · ${post.commentCount} 条评论` : ''}{post.voteCount !== null ? ` · ${post.voteCount} 赞同` : ''}</span><a href={post.sourceUrl} target="_blank" rel="noopener noreferrer">查看知乎原回答 ↗</a><span>当前展示文本预计 {post.readingSeconds} 秒读完{post.textKind === 'excerpt' ? ' · 摘录不代表原回答全文' : ''}</span></div></div>
-}
-
-function SidePost({ post, scenario, showCondition = false }: { post: InitialPost; scenario: string; showCondition?: boolean }) {
-  return <aside className="side-card post-side-card"><span className="side-kicker">本局帖子</span><h3>{post.title}</h3><p>{post.text}</p><div className="source-chip"><FileText size={14} />{postSourceLabel(post)}</div>{showCondition && <div className="condition-mini"><b>本局情景</b>{scenario}</div>}</aside>
-}
-
-function PublishedHistory({ state, through }: { state: GameState; through: number }) {
-  if (through < 1) return null
-  return <aside className="side-card published-history"><details><summary>看看前面几轮 <ChevronDown size={15} /></summary>{([1, 2, 3] as RoundNumber[]).filter(round => round <= through).map(round => <section key={round}><b>{ROUND_COPY[round].kicker}</b>{SEATS.map(seat => <p key={seat}><strong>{seat}</strong>{state.submissions[round][seat]}</p>)}</section>)}</details></aside>
 }
 
 function GamePage({ state, children, sidebar }: { state: GameState; children: React.ReactNode; sidebar?: React.ReactNode }) {
   return <main className="game-page"><StageProgress phase={state.phase} /><div className={`game-columns ${sidebar ? '' : 'single'}`}><div>{children}</div>{sidebar && <div className="game-sidebar">{sidebar}</div>}</div></main>
 }
 
-function Reading({ state, onNext }: { state: GameState; onNext: () => void }) {
-  return <GamePage state={state} sidebar={<aside className="side-card rules-side"><span className="side-kicker">这局要做什么</span><ol><li><b>装人机</b><span>写得像 AI，再猜一次</span></li><li><b>认真说</b><span>写评论，选一条</span></li><li><b>值得问</b><span>提一个问题，最后猜 AI</span></li></ol><details><summary>展开计分规则 <ChevronDown size={15} /></summary><p>被真人误认最多 2 分；首轮猜中 2 分；评论与问题各最多 4 分；最终猜中 3 分。</p></details></aside>}>
-    <article className="content-card reading-card" data-screen="reading">
-      <span className="eyebrow">先看看这道题</span><h1>{state.post.title}</h1>
-      <PostSource post={state.post} />
-      <blockquote>{state.post.text}</blockquote>
-      <div className="reading-note"><LockKeyhole size={18} /><span>补充条件会在第三轮出现。</span></div>
-      <PrimaryButton onClick={onNext}>开始第一轮</PrimaryButton>
-    </article>
-  </GamePage>
-}
-
-function RoundHeader({ round }: { round: RoundNumber }) {
-  const copy = ROUND_COPY[round]
-  return <header className="round-heading"><span className="eyebrow">{copy.kicker}</span><h1>{copy.title}</h1><p>{copy.task}</p></header>
-}
-
-function WritingScreen({ state, round, dispatch }: { state: GameState; round: RoundNumber; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
-  const draft = state.drafts[round]
-  const count = countVisibleCharacters(draft)
-  const locked = Boolean(state.submissions[round][state.userSeat])
-  const error = !locked && draft.length > 0 ? validateSubmission(draft) : null
-  return <GamePage state={state} sidebar={<><SidePost post={state.post} scenario={state.scenario} showCondition={round === 3} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card hint-card"><span className="side-kicker">不知道怎么写？</span>{ROUND_COPY[round].hints.map(item => <span key={item}>{item}</span>)}</aside></>}>
-    <section className="content-card writing-card" data-screen={`round-${round}-write`}>
-      <RoundHeader round={round} />
-      {round === 2 && <div className="tone-shift"><MessageCircle size={18} /><span><b>反串结束。</b>这轮只看评论本身。</span></div>}
-      {round === 3 && <div className="new-condition"><span>补充条件</span><strong>{state.scenario}</strong><p>这是本局补充情境。</p></div>}
-      <label className={`composer ${error ? 'has-error' : ''} ${locked ? 'locked' : ''}`}>
-        <textarea value={draft} disabled={locked} onChange={event => dispatch({ type: 'DRAFT', round, value: event.target.value })} placeholder={ROUND_COPY[round].placeholder} />
-        <span className={count > 50 ? 'over' : ''}>{count}/50</span>
-      </label>
-      {error && <p className="field-error">{error}</p>}
-      {locked ? <div className="locked-submit"><Check size={18} /><span><b>已提交</b>倒计时结束后，会自动进入投票。</span></div> : <p className="privacy-line"><Eye size={15} />提交后不能修改。倒计时结束后，一起看大家写了什么。</p>}
-      {!locked && <div className="screen-actions"><PrimaryButton onClick={() => dispatch({ type: 'SUBMIT', round })} disabled={Boolean(error) || !draft}>提交</PrimaryButton></div>}
+function Lobby({ state, onReady, onRetry }: { state: GameState; onReady: () => void; onRetry: () => void }) {
+  return <GamePage state={state} sidebar={<><aside className="side-card"><span className="side-kicker">本局流程</span><p>每轮先读题，再用 120 秒作答、40 秒从四条匿名内容里找 AI。</p><p>前两轮投票后直接进入下一轮，三轮结束后一起揭晓。</p></aside><aside className="side-card"><span className="side-kicker">匿名规则</span><p>衣服和席位整局不变，但每轮内容编号都会重新打乱。</p></aside></>}>
+    <section className="content-card lobby-card" data-screen="lobby">
+      <span className="eyebrow">开局前</span><h1>认一下你的角色</h1>
+      <p className="lead">记住你的字母和衣服。这局里，你一直是 {state.userSeat}。</p>
+      <CharacterGrid state={state} large />
+      <div className="lobby-actions">
+        {state.aiContentStatus === 'error' && <p className="lobby-error" role="alert">内容暂时无法载入，请重试。</p>}
+        <div><PrimaryButton onClick={onReady} disabled={state.aiContentStatus !== 'ready'}>开始第一轮</PrimaryButton>{state.aiContentStatus === 'error' && <SecondaryButton onClick={onRetry}>重试</SecondaryButton>}</div>
+      </div>
     </section>
   </GamePage>
 }
 
-function VoteScreen({ state, ballot, dispatch }: { state: GameState; ballot: BallotType; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
-  const meta = VOTE_COPY[ballot]
-  const lockedTarget = state.ballots[ballot][state.userSeat]
-  const [pendingTarget, setPendingTarget] = useState<SeatId | null>(null)
+function TopicAside({ round }: { round: RoundNumber }) {
+  const topic = ROUND_TOPICS[round]
+  const material = topic.context.trim()
+  const collapsible = countVisibleCharacters(material) > 88
+  return <aside className="side-card post-side-card">
+    <span className="side-kicker">{round === 3 ? '本轮主题' : '本轮题目'}</span>
+    <h3>{topic.title}</h3>
+    {material && (collapsible
+      ? <details className="topic-material-details"><summary><span className="when-closed">展开全文</span><span className="when-open">收起</span><ChevronDown size={15} /></summary><p>{material}</p></details>
+      : <p className="topic-material-copy">{material}</p>)}
+    {round === 3 && <p className="theme-instruction">围绕这个主题，提一个问题。</p>}
+    <div className="source-chip"><FileText size={14} />{topic.sourceType}</div>
+  </aside>
+}
+
+function PublishedHistory({ state, through }: { state: GameState; through: number }) {
+  if (through < 1) return null
+  return <aside className="side-card published-history"><details><summary>看看前面几轮 <ChevronDown size={15} /></summary>{ROUNDS.filter(round => round <= through).map(round => <section key={round}><b>{ROUND_TOPICS[round].kicker}</b>{state.contentSlots[round].map(slot => <p key={slot.contentId}><strong>{CONTENT_LABELS[slot.contentId]}</strong><span>{state.submissions[round][slot.authorSeat]}</span></p>)}</section>)}</details></aside>
+}
+
+function RoundHeader({ round, secondsLeft }: { round: RoundNumber; secondsLeft: number }) {
+  const topic = ROUND_TOPICS[round]
+  const taskTitle = round === 3 ? '提出一个问题' : '写下你的评论'
+  const taskDescription = round === 3
+    ? '选一个你真想知道的点，一次问清一件事。'
+    : topic.task
+  const minutes = Math.floor(secondsLeft / 60)
+  const seconds = String(secondsLeft % 60).padStart(2, '0')
+  return <>
+    <header className="round-heading"><span className="eyebrow">{topic.kicker}</span><h1>{taskTitle}</h1><p>{taskDescription}</p></header>
+    <div className="writing-status"><span><Clock3 size={16} />作答时间 <strong>{minutes}:{seconds}</strong></span><span>{topic.contentKind}最多 {topic.maxChars} 字</span></div>
+  </>
+}
+
+function ReadingScreen({ state, round, dispatch }: { state: GameState; round: RoundNumber; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
+  const topic = ROUND_TOPICS[round]
+  const material = topic.context.trim()
+  const roundName = ['一', '二', '三'][round - 1]
+  return <GamePage state={state}>
+    <section className={`content-card round-reading-card ${round === 3 ? 'theme-reading-card' : ''}`} data-screen={`round-${round}-read`}>
+      <header><span className="eyebrow">第{roundName}轮 · {round === 3 ? '看主题' : '看题目'}</span><span className="reading-type">{round === 3 ? '本轮主题' : topic.sourceType}</span></header>
+      <div className="reading-topic-body">
+        <h1>{topic.title}</h1>
+        {material && <div className="reading-material"><p>{material}</p></div>}
+        {round === 3 && <p className="reading-theme-task">围绕这个主题，提一个问题。</p>}
+      </div>
+      <div className="reading-actions"><PrimaryButton onClick={() => dispatch({ type: 'START_WRITING', round })}>{round === 3 ? '开始提问' : '读完了，开始作答'}</PrimaryButton></div>
+    </section>
+  </GamePage>
+}
+
+function WritingScreen({ state, round, dispatch }: { state: GameState; round: RoundNumber; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
+  const topic = ROUND_TOPICS[round]
+  const draft = state.drafts[round]
+  const count = countVisibleCharacters(draft)
+  const locked = Boolean(state.submissions[round][state.userSeat])
+  const error = !locked && draft.length > 0 ? validateSubmission(draft, topic.maxChars) : null
+  return <GamePage state={state} sidebar={<><TopicAside round={round} /><aside className="side-card hint-card"><span className="side-kicker">可以从这里想</span>{topic.hints.map(item => <span key={item}>{item}</span>)}</aside>{round > 1 && <PublishedHistory state={state} through={round - 1} />}</>}>
+    <section className="content-card writing-card" data-screen={`round-${round}-write`}>
+      <RoundHeader round={round} secondsLeft={state.secondsLeft} />
+      <label className={`composer ${error ? 'has-error' : ''} ${locked ? 'locked' : ''}`}>
+        <textarea value={draft} disabled={locked} onChange={event => dispatch({ type: 'DRAFT', round, value: event.target.value })} placeholder={topic.placeholder} />
+        <span className={count > topic.maxChars ? 'over' : ''}>{count}/{topic.maxChars}</span>
+      </label>
+      {error && <p className="field-error">{error}</p>}
+      {locked ? <div className="locked-submit"><Check size={18} /><span><b>你已提交</b>倒计时结束后一起看大家写的内容。</span></div> : <p className="privacy-line"><Eye size={15} />提交后不能修改；不会提前公开谁先写完。</p>}
+      {!locked && <div className="screen-actions sticky-mobile-action"><PrimaryButton onClick={() => dispatch({ type: 'SUBMIT', round })} disabled={Boolean(error) || !draft}>提交{topic.contentKind}</PrimaryButton></div>}
+    </section>
+  </GamePage>
+}
+
+function AnonymousAvatar({ label }: { label: string }) {
+  return <div className="anonymous-avatar" aria-hidden="true"><img src="/assets/characters/liukanshan-official-reference.png" alt="" /><strong>{label}</strong></div>
+}
+
+function VoteScreen({ state, round, dispatch }: { state: GameState; round: RoundNumber; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
+  const topic = ROUND_TOPICS[round]
+  const lockedTarget = state.ballots[round][state.userSeat]
+  const ownContentId = contentForAuthor(state.contentSlots[round], state.userSeat)!
+  const [pendingTarget, setPendingTarget] = useState<ContentId | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
-  const finalReview = ballot === 'finalIdentity'
-  const successCopy = lockedTarget
-    ? ballot === 'round2Quality'
-      ? `你选了 ${lockedTarget} 的评论。`
-      : ballot === 'round3Quality'
-        ? `你选了 ${lockedTarget} 的问题。`
-        : `你投给了 ${lockedTarget}。`
-    : ''
-  const waitCopy = ballot === 'finalIdentity' ? '投好了，倒计时结束后揭晓。' : '投好了，倒计时结束后继续。'
 
   useEffect(() => {
     setPendingTarget(null)
     setVoteError(null)
-  }, [ballot, state.gameId])
+  }, [round, state.gameId])
 
-  const castVote = async (seat: SeatId) => {
-    if (seat === state.userSeat || lockedTarget || pendingTarget) return
-    setPendingTarget(seat)
+  const castVote = async (contentId: ContentId) => {
+    if (contentId === ownContentId || lockedTarget || pendingTarget) return
+    setPendingTarget(contentId)
     setVoteError(null)
     try {
-      const receipt = await localVoteService.submitVote({ gameId: state.gameId, ballot, voter: state.userSeat, target: seat })
-      dispatch({ type: 'CAST_VOTE', ballot, seat: receipt.target })
-    } catch {
-      setVoteError('没投成功，请重试。')
+      const receipt = await localVoteService.submitVote({ gameId: state.gameId, round, voter: state.userSeat, targetContentId: contentId, ownContentId })
+      dispatch({ type: 'CAST_VOTE', round, contentId: receipt.targetContentId })
+    } catch (error) {
+      setVoteError(error instanceof Error ? error.message : '没投成功，请重试。')
     } finally {
       setPendingTarget(null)
     }
   }
 
-  return <GamePage state={state} sidebar={<><SidePost post={state.post} scenario={state.scenario} showCondition={meta.round === 3} />{!finalReview && <PublishedHistory state={state} through={meta.round - 1} />}<aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />点选就投票，投出后不能改</div><div><Users size={15} />不能投自己</div></aside></>}>
-    <section className="content-card vote-screen" data-screen={ballot}>
-      <header className="round-heading"><span className="eyebrow">{ROUND_COPY[meta.round].kicker} · 投票</span><h1>{meta.title}</h1><p>{meta.subtitle}</p></header>
-      <div className="submission-grid">
-        {SEATS.map(seat => {
-          const isSelf = seat === state.userSeat
-          const isSelected = lockedTarget === seat
-          const isPending = pendingTarget === seat
-          const actionLabel = isSelf
-            ? '你写的，不能投自己'
-            : ballot === 'round2Quality'
-              ? `给 ${seat} 的评论投票`
-              : ballot === 'round3Quality'
-                ? `给 ${seat} 的问题投票`
-                : `投给 ${seat}，认为 TA 是 AI`
-          return <button key={seat} className={`submission-card ${isSelected ? 'selected' : ''} ${isPending ? 'submitting' : ''} ${isSelf ? 'self' : ''} ${finalReview ? 'final-review-card' : ''}`} disabled={isSelf || Boolean(lockedTarget) || Boolean(pendingTarget)} aria-label={actionLabel} aria-pressed={isSelected} onClick={() => castVote(seat)}>
-            <div className="submission-author"><Character seat={seat} outfit={state.outfitBySeat[seat]} size="small" current={isSelf} /><span className="select-indicator">{isSelected ? <Check size={16} /> : ''}</span></div>
-            {finalReview ? <div className="final-round-review">{([1, 2, 3] as RoundNumber[]).map(round => <div key={round}><span>{ROUND_COPY[round].kicker}</span><p>{state.submissions[round][seat]}</p></div>)}</div> : <p>{state.submissions[meta.round][seat]}</p>}
+  return <GamePage state={state} sidebar={<><TopicAside round={round} />{round > 1 && <PublishedHistory state={state} through={round - 1} />}<aside className="side-card vote-reminder"><span className="side-kicker">投票规则</span><div><LockKeyhole size={15} />点选就投票，投出后不能改</div><div><Users size={15} />不能投自己写的内容</div></aside></>}>
+    <section className="content-card vote-screen" data-screen={`round-${round}-vote`}>
+      <header className="round-heading"><span className="eyebrow">{topic.kicker} · 猜 AI</span><h1>{topic.voteTitle}</h1><p>本轮内容已匿名打乱。点选后不能更改。</p></header>
+      <div className="submission-grid anonymous-grid">
+        {state.contentSlots[round].map(slot => {
+          const isSelf = slot.authorSeat === state.userSeat
+          const isSelected = lockedTarget === slot.contentId
+          const isPending = pendingTarget === slot.contentId
+          const label = CONTENT_LABELS[slot.contentId]
+          return <button key={slot.contentId} className={`submission-card anonymous-card ${isSelected ? 'selected' : ''} ${isPending ? 'submitting' : ''} ${isSelf ? 'self' : ''}`} disabled={isSelf || Boolean(lockedTarget) || Boolean(pendingTarget)} aria-label={isSelf ? `内容${label}，你写的，不能投票` : `投给内容${label}，认为它是 AI 写的`} aria-pressed={isSelected} onClick={() => castVote(slot.contentId)}>
+            <div className="anonymous-card-head"><AnonymousAvatar label={label} /><span className="select-indicator">{isSelected ? <Check size={16} /> : ''}</span></div>
+            <p>{state.submissions[round][slot.authorSeat]}</p>
             {isSelf && <span className="self-chip">你写的 · 不能投自己</span>}
             {isSelected && <span className="vote-chip">已投</span>}
             {isPending && <span className="vote-chip pending">正在投票…</span>}
           </button>
         })}
       </div>
-      {lockedTarget && <div className="vote-status success"><Check size={17} /><div><strong>{successCopy}</strong><span>{waitCopy}</span></div></div>}
+      {lockedTarget && <div className="vote-status success"><Check size={17} /><div><strong>你投给了 {CONTENT_LABELS[lockedTarget]}。</strong><span>{round < 3 ? '投好了，倒计时结束后进入下一轮；你仍可以继续看内容。' : '投好了，倒计时结束后三轮一起揭晓；你仍可以继续看内容。'}</span></div></div>}
       {!lockedTarget && pendingTarget && <div className="vote-status"><Clock3 size={17} /><span>正在投票…</span></div>}
       {!lockedTarget && voteError && <div className="vote-status error" role="alert"><Info size={17} /><span>{voteError}</span></div>}
     </section>
   </GamePage>
 }
 
-function Reveal({ state, dispatch }: { state: GameState; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
-  const guess = state.ballots.finalIdentity[state.userSeat]
-  const correct = guess === state.aiSeat
-  return <GamePage state={state}>
-    <section className="content-card reveal-card" data-screen="reveal">
-      <span className="eyebrow">身份揭晓</span><h1>原来 {state.aiSeat} 是 AI！</h1>
-      <p className={`guess-result ${correct ? 'correct' : 'wrong'}`}>{correct ? '猜对了！+3 分' : `你选了 ${guess}，这次没猜中。`}</p>
-      <CharacterGrid state={state} large reveal />
-      <p className="muted-copy">大家仍然使用本局代号，不会公开个人资料。</p>
-      <div className="reveal-actions">
-        <a className="secondary-button source-link" href={state.post.sourceUrl ?? undefined}>去知乎看原帖<ExternalLink size={16} /></a>
-        <PrimaryButton onClick={() => dispatch({ type: 'SHOW_SETTLEMENT' })}>看看这局成绩</PrimaryButton>
-      </div>
-    </section>
-  </GamePage>
+function receivedVotes(state: GameState, round: RoundNumber, seat: SeatId): number {
+  return humanSeats(state.aiSeat).filter(voter => {
+    const contentId = state.ballots[round][voter]
+    return contentId && state.contentSlots[round].find(slot => slot.contentId === contentId)?.authorSeat === seat
+  }).length
 }
 
-function RelationDrawer({ card, state, onClose }: { card: RelationCardData; state: GameState; onClose: () => void }) {
-  const seat = card.otherSeat
-  return <div className="drawer-backdrop" onMouseDown={event => event.target === event.currentTarget && onClose()}>
-    <aside className="relation-drawer" role="dialog" aria-modal="true" aria-label={`看看 ${seat} 这局写了什么`}>
-      <button className="modal-close" onClick={onClose} aria-label="关闭"><X size={20} /></button>
-      <div className="drawer-character"><Character seat={seat} outfit={state.outfitBySeat[seat]} size="medium" /><div><span>{seat} 的本局发言</span><h2>{card.title}</h2></div></div>
-      <p className="drawer-detail">{card.detail}</p>
-      <div className="round-review">
-        {[1, 2, 3].map(round => <article key={round}><span>{ROUND_COPY[round as RoundNumber].kicker}</span><p>{state.submissions[round as RoundNumber][seat]}</p></article>)}
-      </div>
-      <div className="evidence-box"><b>当时怎么投的</b>{card.evidence.map(item => <span key={item}><Check size={13} />{item}</span>)}</div>
-    </aside>
-  </div>
+function FinalRevealPanel({ state }: { state: GameState }) {
+  return <section className="content-card final-reveal-card" data-screen="final-reveal">
+    <div className="final-reveal-lead">
+      <div><span className="eyebrow">最终揭晓</span><h1>{state.aiSeat} 是本局 AI</h1><p>三轮答案现在一起公开。每轮的匿名编号都不一样。</p></div>
+      <Character seat={state.aiSeat} outfit={state.outfitBySeat[state.aiSeat]} size="large" revealedAi />
+    </div>
+    <div className="final-round-result-grid">
+      {ROUNDS.map(round => {
+        const aiContentId = contentForAuthor(state.contentSlots[round], state.aiSeat)!
+        const userGuess = state.ballots[round][state.userSeat]
+        const correct = userGuess === aiContentId
+        return <article key={round}>
+          <span>第{['一', '二', '三'][round - 1]}轮</span>
+          <h2>{CONTENT_LABELS[aiContentId]} 是 AI 写的</h2>
+          <p>{state.submissions[round][state.aiSeat]}</p>
+          <strong className={correct ? 'correct' : 'wrong'}>{correct ? '你猜对了 · +2 分' : `你投给了 ${userGuess ? CONTENT_LABELS[userGuess] : '—'} · 未猜中`}</strong>
+        </article>
+      })}
+    </div>
+  </section>
 }
 
 function Settlement({ state, dispatch }: { state: GameState; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {
   const ballots = completeBallots(state)
-  const scores = calculateScores(state.aiSeat, ballots)
+  const scores = calculateScores(state.aiSeat, ballots, state.contentSlots)
   const userScore = scores.find(item => item.seat === state.userSeat)!
   const achievements = achievementsFor(userScore, scores)
-  const relations = generateRelationCards(state.userSeat, state.aiSeat, ballots)
-  const userRank = scores.filter(item => item.total > userScore.total).length + 1
-  const userTied = scores.filter(item => item.total === userScore.total).length > 1
-  const validGameCount = state.rematchIndex + 1
-  const relationTypes = new Set(relations.map(card => card.type))
-  const mistakeTypes = new Set(['mutualMistake', 'youMistook', 'theyMistook'])
-  const relationTitle = relations.length > 0 && relations.every(card => mistakeTypes.has(card.type))
-    ? '刚才谁认错了谁？'
-    : relationTypes.size === 1 && relationTypes.has('sharedDetect')
-      ? '你们都猜对了'
-      : relationTypes.size === 1 && relationTypes.has('contentRecognition')
-        ? '这几票，投给了谁？'
-        : '这一局的小插曲'
-  const [drawer, setDrawer] = useState<RelationCardData | null>(null)
   const [copied, setCopied] = useState<RoundNumber | null>(null)
   const [copyError, setCopyError] = useState<string | null>(null)
-  const [reviewOpen, setReviewOpen] = useState(false)
-  const copyCandidate = async (round: 2 | 3) => {
-    const base = state.submissions[round][state.userSeat] ?? ''
-    const text = round === 3 ? `本局情景：${state.scenario}\n我的问题：${base}` : base
+
+  const copyCandidate = async (round: RoundNumber) => {
+    const text = state.submissions[round][state.userSeat] ?? ''
     try {
       await navigator.clipboard.writeText(text)
       setCopyError(null)
@@ -284,18 +265,22 @@ function Settlement({ state, dispatch }: { state: GameState; dispatch: React.Dis
       setCopyError('复制失败，请检查浏览器的剪贴板权限后重试。')
     }
   }
+
   if (!state.gameValid) return <GamePage state={state}><section className="content-card invalid-card"><Info size={34} /><h1>本局未完成</h1><p>{state.invalidReason}</p><SecondaryButton onClick={() => dispatch({ type: 'RESET' })}>返回活动首页</SecondaryButton></section></GamePage>
+
+  const userTied = scores.filter(item => item.total === userScore.total).length > 1
   return <GamePage state={state}>
     <div className="settlement-page" data-screen="settlement">
-      <section className="content-card settlement-hero"><span className="eyebrow">本局结算</span><div><div><h1>你获得 {userScore.total} 分</h1><p>{userTied ? `你并列第 ${userRank} 名` : `你获得了第 ${userRank} 名`}</p></div><Trophy size={48} /></div></section>
-      <section className="content-card score-section"><div className="section-title"><div><span className="eyebrow">AI 的票不计分</span><h2>本局积分排行</h2></div><span className="max-score">满分 15 分</span></div>
-        <div className="score-table"><div className="score-row head"><span>排名 / 玩家</span><span>反串 / 第一轮猜 AI</span><span>评论</span><span>问题</span><span>最后猜 AI</span><span>总分</span></div>{scores.map(score => <div className={`score-row ${score.seat === state.userSeat ? 'mine' : ''}`} key={score.seat}><span><b>{scores.filter(item => item.total > score.total).length + 1}</b><Character seat={score.seat} outfit={state.outfitBySeat[score.seat]} size="small" current={score.seat === state.userSeat} /></span><span>{score.masquerade + score.firstDetect}</span><span>{score.comment}</span><span>{score.question}</span><span>{score.finalDetect}</span><strong>{score.total}</strong></div>)}</div>
-        <div className="ai-summary"><Character seat={state.aiSeat} outfit={state.outfitBySeat[state.aiSeat]} size="small" revealedAi /><span>AI 不参与排名。</span></div>
+      <FinalRevealPanel state={state} />
+      <section className="content-card settlement-hero"><span className="eyebrow">总成绩</span><div><div><h1>你获得 {userScore.total} 分</h1><p>{userTied ? `你并列第 ${userScore.rank} 名` : `你获得了第 ${userScore.rank} 名`}</p></div><Trophy size={48} /></div></section>
+      <section className="content-card score-section"><div className="section-title"><div><span className="eyebrow">三名真人排名</span><h2>本局积分</h2></div><span className="max-score">满分 15 分 · AI 不投票</span></div>
+        <div className="score-table"><div className="score-row head"><span>排名 / 玩家</span><span>第一轮</span><span>第二轮</span><span>第三轮</span><span>总分</span></div>{scores.map(score => <div className={`score-row ${score.seat === state.userSeat ? 'mine' : ''}`} key={score.seat}><span><b>{score.rank}</b><Character seat={score.seat} outfit={state.outfitBySeat[score.seat]} size="small" current={score.seat === state.userSeat} /></span><span data-mobile-label="一">{score.rounds[1].total}</span><span data-mobile-label="二">{score.rounds[2].total}</span><span data-mobile-label="三">{score.rounds[3].total}</span><strong data-mobile-label="总">{score.total}</strong></div>)}</div>
+        <div className="ai-summary"><Character seat={state.aiSeat} outfit={state.outfitBySeat[state.aiSeat]} size="small" revealedAi /><span>AI 只提供内容，不投票，也不进入真人排名。</span></div>
       </section>
-      <section className="content-card achievements-section"><div className="section-title"><div><span className="eyebrow">本局表现</span><h2>本局成就</h2></div><span className="index-note">入机指数：再玩几局就能看到了（已完成 {validGameCount}/10 局）</span></div><div className="achievement-list">{achievements.map((item, index) => <div key={item}><span>{index === achievements.length - 1 ? <Crown size={21} /> : <Trophy size={19} />}</span><b>{item}</b></div>)}</div></section>
-      <section className="content-card relations-section"><div className="section-title"><h2>{relationTitle}</h2></div>{relations.length ? <div className="relation-grid">{relations.map(card => <article key={card.id} className={`relation-card relation-${card.type}`}><div className="relation-people"><Character seat={state.userSeat} outfit={state.outfitBySeat[state.userSeat]} size="small" current /><i /><Character seat={card.otherSeat} outfit={state.outfitBySeat[card.otherSeat]} size="small" /></div><h3>{card.title}</h3><p>{card.detail}</p><button onClick={() => setDrawer(card)}>看看 TA 刚才写了什么</button></article>)}</div> : <div className="neutral-recap">看看大家这局都写了什么</div>}</section>
-      <section className="content-card candidates-section"><div className="section-title"><div><span className="eyebrow">你本局写下的内容</span><h2>把这两句带回评论区</h2></div></div><div className="candidate-grid"><article><span>第二轮 · 认真评论</span><p>{state.submissions[2][state.userSeat]}</p><button onClick={() => copyCandidate(2)}>{copied === 2 ? <Check size={16} /> : <Copy size={16} />}{copied === 2 ? '已复制' : '复制我的评论'}</button></article><article><span>第三轮 · 提问</span><p>{`本局情景：${state.scenario}。我的问题：`}{state.submissions[3][state.userSeat]}</p><small>复制问题时，会附上第三轮的补充信息。</small><button onClick={() => copyCandidate(3)}>{copied === 3 ? <Check size={16} /> : <Copy size={16} />}{copied === 3 ? '已复制' : '复制我的问题'}</button></article></div>{copyError && <p className="field-error">{copyError}</p>}<div className="final-actions"><SecondaryButton onClick={() => setReviewOpen(true)}>回看本题</SecondaryButton><PrimaryButton onClick={() => dispatch({ type: 'REMATCH' })}><RotateCcw size={17} />再来一局</PrimaryButton></div><p className="no-publish"><Clipboard size={14} />复制后，可以去原帖粘贴并自行发布。</p></section>
-    </div>{drawer && <RelationDrawer card={drawer} state={state} onClose={() => setDrawer(null)} />}{reviewOpen && <div className="modal-backdrop" onMouseDown={event => event.target === event.currentTarget && setReviewOpen(false)}><article className="rules-modal review-post" role="dialog" aria-modal="true" aria-label="回看本题"><button className="modal-close" onClick={() => setReviewOpen(false)} aria-label="关闭回看"><X size={20} /></button><span className="eyebrow">题目回顾</span><h2>{state.post.title}</h2><blockquote>{state.post.text}</blockquote><div className="new-condition"><span>第三轮补充条件</span><strong>{state.scenario}</strong></div><PrimaryButton onClick={() => setReviewOpen(false)}>回到结算</PrimaryButton></article></div>}
+      <section className="content-card achievements-section"><div className="section-title"><div><span className="eyebrow">按本局实际结果生成</span><h2>本局成就</h2></div></div><div className="achievement-list">{achievements.map((item, index) => <div key={item}><span>{index === achievements.length - 1 ? <Crown size={21} /> : <Trophy size={19} />}</span><b>{item}</b></div>)}</div></section>
+      <section className="content-card recap-section"><div className="section-title"><div><span className="eyebrow">编号每轮都重新打乱</span><h2>三轮内容回看</h2></div></div><div className="full-round-recap">{ROUNDS.map(round => <details key={round}><summary><span>{ROUND_TOPICS[round].kicker}</span><b>{ROUND_TOPICS[round].title}</b><ChevronDown size={17} /></summary><div className="recap-grid">{state.contentSlots[round].map(slot => <article key={slot.contentId}><div><strong>{CONTENT_LABELS[slot.contentId]} · {slot.authorSeat}{slot.authorSeat === state.userSeat ? '（你）' : ''}</strong>{slot.authorSeat === state.aiSeat && <span>AI</span>}</div><p>{state.submissions[round][slot.authorSeat]}</p><small>收到 {receivedVotes(state, round, slot.authorSeat)} 张“AI”票</small></article>)}</div></details>)}</div></section>
+      <section className="content-card candidates-section"><div className="section-title"><div><span className="eyebrow">你本局写下的内容</span><h2>复制我的内容</h2></div></div><div className="candidate-grid three">{ROUNDS.map(round => <article key={round}><span>第{['一', '二', '三'][round - 1]}轮 · {ROUND_TOPICS[round].contentKind}</span><p>{state.submissions[round][state.userSeat]}</p><button onClick={() => copyCandidate(round)}>{copied === round ? <Check size={16} /> : <Copy size={16} />}{copied === round ? '已复制' : `复制我的${ROUND_TOPICS[round].contentKind}`}</button></article>)}</div>{copyError && <p className="field-error">{copyError}</p>}<div className="final-actions"><PrimaryButton onClick={() => dispatch({ type: 'REMATCH' })}><RotateCcw size={17} />再来一局</PrimaryButton></div><p className="no-publish"><Clipboard size={14} />这里只复制文字，不会替你发布。</p></section>
+    </div>
   </GamePage>
 }
 
@@ -303,12 +288,18 @@ export default function GameApp() {
   const [state, dispatch] = useReducer(gameReducer, undefined, loadGame)
   const [rulesOpen, setRulesOpen] = useState(false)
   const requestedAiGames = useRef(new Set<string>())
-  useEffect(() => {
-    saveGame(state)
-  }, [state])
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' })
-  }, [state.phase])
+  const debugControlsEnabled = import.meta.env.DEV && new URLSearchParams(window.location.search).get('debug') === '1'
+  const testNextEnabled = import.meta.env.DEV && state.phase !== 'landing' && state.phase !== 'lobby' && state.phase !== 'settlement'
+
+  const advanceTestPhase = () => {
+    if (state.phase === 'round1Read') return dispatch({ type: 'START_WRITING', round: 1 })
+    if (state.phase === 'round2Read') return dispatch({ type: 'START_WRITING', round: 2 })
+    if (state.phase === 'round3Read') return dispatch({ type: 'START_WRITING', round: 3 })
+    dispatch({ type: 'PHASE_EXPIRED', from: state.phase })
+  }
+
+  useEffect(() => { saveGame(state) }, [state])
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'auto' }) }, [state.phase])
   useEffect(() => {
     const timer = window.setInterval(() => dispatch({ type: 'TICK' }), 1000)
     return () => window.clearInterval(timer)
@@ -323,36 +314,36 @@ export default function GameApp() {
     const gameId = state.gameId
     requestedAiGames.current.add(gameId)
     dispatch({ type: 'AI_CONTENT_REQUEST' })
-    void generateGameContent(state.post)
+    void generateGameContent()
       .then(content => dispatch({ type: 'AI_CONTENT_SUCCESS', gameId, content }))
       .catch(error => {
         requestedAiGames.current.delete(gameId)
-        dispatch({ type: 'AI_CONTENT_FAILURE', gameId, message: error instanceof Error ? error.message : 'AI 内容生成失败，请重试。' })
+        dispatch({ type: 'AI_CONTENT_FAILURE', gameId, message: error instanceof Error ? error.message : 'AI 内容准备失败，请重试。' })
       })
-  }, [state.phase, state.aiContentStatus, state.gameId, state.post])
+  }, [state.phase, state.aiContentStatus, state.gameId])
 
   const screen = useMemo(() => {
     switch (state.phase) {
       case 'landing': return <Landing state={state} onStart={() => dispatch({ type: 'START' })} onRules={() => setRulesOpen(true)} />
       case 'lobby': return <Lobby state={state} onReady={() => dispatch({ type: 'READY' })} onRetry={() => dispatch({ type: 'AI_CONTENT_RETRY' })} />
-      case 'reading': return <Reading state={state} onNext={() => dispatch({ type: 'PHASE_EXPIRED', from: state.phase })} />
+      case 'round1Read': return <ReadingScreen state={state} round={1} dispatch={dispatch} />
       case 'round1Write': return <WritingScreen state={state} round={1} dispatch={dispatch} />
-      case 'round1Vote': return <VoteScreen key="round1Identity" state={state} ballot="round1Identity" dispatch={dispatch} />
+      case 'round1Vote': return <VoteScreen key="round1" state={state} round={1} dispatch={dispatch} />
+      case 'round2Read': return <ReadingScreen state={state} round={2} dispatch={dispatch} />
       case 'round2Write': return <WritingScreen state={state} round={2} dispatch={dispatch} />
-      case 'round2Vote': return <VoteScreen key="round2Quality" state={state} ballot="round2Quality" dispatch={dispatch} />
+      case 'round2Vote': return <VoteScreen key="round2" state={state} round={2} dispatch={dispatch} />
+      case 'round3Read': return <ReadingScreen state={state} round={3} dispatch={dispatch} />
       case 'round3Write': return <WritingScreen state={state} round={3} dispatch={dispatch} />
-      case 'round3QualityVote': return <VoteScreen key="round3Quality" state={state} ballot="round3Quality" dispatch={dispatch} />
-      case 'finalIdentityVote': return <VoteScreen key="finalIdentity" state={state} ballot="finalIdentity" dispatch={dispatch} />
-      case 'reveal': return <Reveal state={state} dispatch={dispatch} />
+      case 'round3Vote': return <VoteScreen key="round3" state={state} round={3} dispatch={dispatch} />
       case 'settlement': return <Settlement state={state} dispatch={dispatch} />
     }
   }, [state])
 
   return <>
-    <GameHeader phase={state.phase} seconds={state.secondsLeft} onRules={() => setRulesOpen(true)} onReset={() => dispatch({ type: 'RESET' })} />
+    <GameHeader phase={state.phase} seconds={state.secondsLeft} onRules={() => setRulesOpen(true)} onReset={() => dispatch({ type: 'RESET' })} onTestNext={testNextEnabled ? advanceTestPhase : undefined} />
     {screen}
     {state.notice && <div className="toast" role="status">{state.notice}</div>}
     {rulesOpen && <RulesModal onClose={() => setRulesOpen(false)} />}
-    {import.meta.env.DEV && <DemoControls phase={state.phase} seconds={state.secondsLeft} paused={state.paused} speed={state.speed} onPause={() => dispatch({ type: 'TOGGLE_PAUSE' })} onSpeed={() => dispatch({ type: 'TOGGLE_SPEED' })} onEnd={() => dispatch({ type: 'PHASE_EXPIRED', from: state.phase })} onReset={() => dispatch({ type: 'RESET' })} />}
+    {debugControlsEnabled && <DemoControls phase={state.phase} seconds={state.secondsLeft} paused={state.paused} speed={state.speed} onPause={() => dispatch({ type: 'TOGGLE_PAUSE' })} onSpeed={() => dispatch({ type: 'TOGGLE_SPEED' })} onEnd={() => dispatch({ type: 'PHASE_EXPIRED', from: state.phase })} onReset={() => dispatch({ type: 'RESET' })} />}
   </>
 }

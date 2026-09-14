@@ -1,54 +1,53 @@
-import type { InitialPost } from './posts'
-
 export type SeatId = 'A' | 'B' | 'C' | 'D'
 export type OutfitId = 'blue' | 'green' | 'yellow' | 'purple'
 export type RoundNumber = 1 | 2 | 3
+export type ContentId = '1' | '2' | '3' | '4'
 
 export type GamePhase =
   | 'landing'
   | 'lobby'
-  | 'reading'
+  | 'round1Read'
   | 'round1Write'
   | 'round1Vote'
+  | 'round2Read'
   | 'round2Write'
   | 'round2Vote'
+  | 'round3Read'
   | 'round3Write'
-  | 'round3QualityVote'
-  | 'finalIdentityVote'
-  | 'reveal'
+  | 'round3Vote'
   | 'settlement'
 
-export type BallotType = 'round1Identity' | 'round2Quality' | 'round3Quality' | 'finalIdentity'
 export type AiContentStatus = 'idle' | 'loading' | 'ready' | 'error'
+export type AiContentSource = 'preset' | 'model'
 
 export interface GeneratedGameContent {
-  scenario: string
+  source: AiContentSource
   submissions: Record<RoundNumber, string>
 }
 
-export interface GameBallots {
-  round1Identity: Partial<Record<SeatId, SeatId>>
-  round2Quality: Partial<Record<SeatId, SeatId>>
-  round3Quality: Partial<Record<SeatId, SeatId>>
-  finalIdentity: Partial<Record<SeatId, SeatId>>
+export interface RoundContentSlot {
+  contentId: ContentId
+  authorSeat: SeatId
 }
 
+export type RoundSlots = Record<RoundNumber, RoundContentSlot[]>
+export type GameBallots = Record<RoundNumber, Partial<Record<SeatId, ContentId>>>
+
 export interface GameState {
-  version: 2
+  version: 3
   gameId: string
-  post: InitialPost
-  seenPostIds: string[]
-  scenario: string
-  aiContentStatus: AiContentStatus
-  aiContentError?: string
   rematchIndex: number
   phase: GamePhase
   userSeat: SeatId
   aiSeat: SeatId
   outfitBySeat: Record<SeatId, OutfitId>
+  contentSlots: RoundSlots
   submissions: Record<RoundNumber, Partial<Record<SeatId, string>>>
   drafts: Record<RoundNumber, string>
   ballots: GameBallots
+  aiContentStatus: AiContentStatus
+  aiContentSource?: AiContentSource
+  aiContentError?: string
   paused: boolean
   speed: 1 | 5
   secondsLeft: number
@@ -59,23 +58,16 @@ export interface GameState {
   settled: boolean
 }
 
-export interface ScoreBreakdown {
-  seat: SeatId
-  masquerade: number
-  firstDetect: number
-  comment: number
-  question: number
-  finalDetect: number
+export interface RoundScoreBreakdown {
+  correctGuess: 0 | 2
+  topMisidentified: 0 | 3
+  misidentificationVotes: number
   total: number
 }
 
-export type RelationType = 'mutualMistake' | 'youMistook' | 'theyMistook' | 'sharedDetect' | 'contentRecognition'
-
-export interface RelationCardData {
-  id: string
-  otherSeat: SeatId
-  type: RelationType
-  title: string
-  detail: string
-  evidence: string[]
+export interface ScoreBreakdown {
+  seat: SeatId
+  rounds: Record<RoundNumber, RoundScoreBreakdown>
+  total: number
+  rank: number
 }

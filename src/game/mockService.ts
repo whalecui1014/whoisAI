@@ -1,10 +1,11 @@
-import type { BallotType, SeatId } from './types'
+import type { ContentId, RoundNumber, SeatId } from './types'
 
 export interface VoteRequest {
   gameId: string
-  ballot: BallotType
+  round: RoundNumber
   voter: SeatId
-  target: SeatId
+  targetContentId: ContentId
+  ownContentId: ContentId
 }
 
 export interface VoteReceipt extends VoteRequest {
@@ -22,9 +23,9 @@ export function createLocalVoteService(options: LocalVoteServiceOptions = {}) {
 
   return {
     async submitVote(request: VoteRequest): Promise<VoteReceipt> {
-      if (request.voter === request.target) throw new Error('不能投自己哦。')
+      if (request.targetContentId === request.ownContentId) throw new Error('不能投自己。')
 
-      const key = `${request.gameId}:${request.ballot}:${request.voter}`
+      const key = `${request.gameId}:${request.round}:${request.voter}`
       const attempt = (attempts.get(key) ?? 0) + 1
       attempts.set(key, attempt)
       if (options.latencyMs !== 0) {
@@ -34,7 +35,7 @@ export function createLocalVoteService(options: LocalVoteServiceOptions = {}) {
 
       const existing = receipts.get(key)
       if (existing) {
-        if (existing.target !== request.target) throw new Error('这张选票已经提交，不能改投。')
+        if (existing.targetContentId !== request.targetContentId) throw new Error('这张选票已经提交，不能改投。')
         return existing
       }
 

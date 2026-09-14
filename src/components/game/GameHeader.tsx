@@ -1,4 +1,4 @@
-import { CircleHelp, RotateCcw } from 'lucide-react'
+import { CircleHelp, RotateCcw, SkipForward } from 'lucide-react'
 import { PHASE_LABELS } from '../../game/data'
 import type { GamePhase } from '../../game/types'
 
@@ -7,9 +7,10 @@ interface GameHeaderProps {
   seconds: number
   onRules: () => void
   onReset: () => void
+  onTestNext?: () => void
 }
 
-export function GameHeader({ phase, seconds, onRules, onReset }: GameHeaderProps) {
+export function GameHeader({ phase, seconds, onRules, onReset, onTestNext }: GameHeaderProps) {
   return (
     <header className="game-header">
       <div className="game-header-inner">
@@ -23,6 +24,7 @@ export function GameHeader({ phase, seconds, onRules, onReset }: GameHeaderProps
           {phase !== 'landing' && <span className="current-stage">{PHASE_LABELS[phase]}</span>}
           {seconds > 0 && <span className="stage-timer">还剩 {seconds} 秒</span>}
           <button onClick={onRules}><CircleHelp size={17} />玩法说明</button>
+          {onTestNext && <button className="test-next-button" onClick={onTestNext}><SkipForward size={16} />下一阶段</button>}
           {phase !== 'landing' && <button onClick={onReset}><RotateCcw size={16} />退出本局</button>}
         </nav>
       </div>

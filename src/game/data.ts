@@ -1,6 +1,15 @@
-import type { BallotType, GamePhase, OutfitId, RoundNumber, SeatId } from './types'
+import type { ContentId, GamePhase, OutfitId, RoundNumber, SeatId } from './types'
 
 export const SEATS: SeatId[] = ['A', 'B', 'C', 'D']
+export const ROUNDS: RoundNumber[] = [1, 2, 3]
+export const CONTENT_IDS: ContentId[] = ['1', '2', '3', '4']
+
+export const CONTENT_LABELS: Record<ContentId, string> = {
+  1: '①',
+  2: '②',
+  3: '③',
+  4: '④',
+}
 
 export const OUTFITS: Record<OutfitId, { label: string; src: string; color: string }> = {
   blue: { label: '蓝色连帽衫', src: '/assets/characters/liukanshan-blue.png', color: '#1772f6' },
@@ -14,100 +23,136 @@ export const LANDING_COPY = {
   titleTop: '快来知乎',
   titleBottom: '找人机！',
   subtitle: '这次，真人也来装 AI。',
-  description: '三轮、每条最多 50 字：先装 AI，再认真说，最后猜出谁是 AI。',
-  primaryAction: '开始一局',
+  description: '三轮猜 AI。猜对 +2 分，被误认票数最高的真人 +3 分。',
+  primaryAction: '开始游戏',
   secondaryAction: '看看怎么玩',
-  topicLabel: '本局话题',
+  topicLabel: '本局三轮',
 }
 
-export const POST = {
-  title: '如何看待中国博士人数已经超过驴的存栏量？',
-  tag: '博士与驴',
-  sourceType: '知乎原帖',
-  sourceDescription: '根据知乎原回答压缩整理；原帖将在身份揭晓后开放',
-  sourceUrl: 'https://www.zhihu.com/question/2073986909198730674/answer/2076025734280254858',
-  excerpt: '有人发现，中国博士人数和驴的存栏量都在 120 万左右。原回答指出，博士总量上升不等于“太多”，中国博士占总人口的比例仍低于欧美；更明显的变化是，驴存栏从上世纪 90 年代的千万头级别降到了百万头级别。这个看似离谱的比较，究竟说明了什么？',
-  newCondition: '原回答补充：中国博士总数约 120 万，但占总人口比例低于欧美；驴存栏已从上世纪 90 年代的千万头级别降到约 120 万。',
-  copyPrefix: '补充资料：回答提到中国博士总数约 120 万，而驴存栏从千万头级别降到约 120 万。我想问：',
+export interface RoundTopic {
+  round: RoundNumber
+  kicker: string
+  title: string
+  task: string
+  context: string
+  sourceType: string
+  maxChars: 30 | 50
+  contentKind: '评论' | '问题'
+  hints: string[]
+  placeholder: string
+  voteTitle: string
 }
 
-export const ROUND_COPY: Record<RoundNumber, { kicker: string; title: string; task: string; hints: string[]; placeholder: string }> = {
+export const ROUND_TOPICS: Record<RoundNumber, RoundTopic> = {
   1: {
-    kicker: '第一轮 · 全员装人机',
-    title: '先把自己写得像 AI',
-    task: '围绕这篇帖子，写一条刻意像 AI 的评论。',
-    hints: ['综合评估……', '建议结合……', '从多个维度来看……'],
-    placeholder: '写一句有点“标准答案味”的话……',
+    round: 1,
+    kicker: '第一轮 · 有梗的帖子',
+    title: '为什么《牛来》能申请到龙标？',
+    task: '写一条评论。你可以装得像 AI，也可以直接玩梗。',
+    context: '只根据题目本身作答，不预设影片内容或具体审核原因。',
+    sourceType: '游戏题目',
+    maxChars: 50,
+    contentKind: '评论',
+    hints: ['一本正经分析', '顺着标题玩梗', '抓一个细节说'],
+    placeholder: '写下你的评论……',
+    voteTitle: '哪条评论是 AI 写的？',
   },
   2: {
-    kicker: '第二轮 · 这次认真说',
-    title: '你会怎么回复题主？',
-    task: '如果这条评论真的留在帖子下面，你会说什么？',
-    hints: ['我在意的是……', '容易被忽略的是……', '如果是我，我会……'],
-    placeholder: '把你真正想说的话写下来……',
+    round: 2,
+    kicker: '第二轮 · 知识概念题',
+    title: 'iPhone duo 的 duo 有什么含义？',
+    task: '写一条评论。可以解释你的理解，也可以质疑这个说法。',
+    context: '把 duo 当作一个词来谈；不知道词源，也可以只写你确定的理解。',
+    sourceType: '游戏题目',
+    maxChars: 50,
+    contentKind: '评论',
+    hints: ['先说你知道的', '不确定可以直说', '别硬堆术语'],
+    placeholder: '写下你对 duo 的理解……',
+    voteTitle: '这次，哪条评论是 AI 写的？',
   },
   3: {
-    kicker: '第三轮 · 这问题值得问',
-    title: '还有什么没问清楚？',
-    task: '结合本局情景，提出一个有创意、值得题主回答的问题。',
-    hints: ['哪个细节最让你好奇？', '换个角度会怎样？', '什么答案会出乎意料？'],
-    placeholder: '写一个值得题主回应的问题……',
+    round: 3,
+    kicker: '第三轮 · 主题提问',
+    title: '#西游记',
+    task: '围绕 #西游记，提一个问题。',
+    context: '人物、情节、设定都可以，一次问清楚一件事。',
+    sourceType: '主题标签',
+    maxChars: 30,
+    contentKind: '问题',
+    hints: ['挑一个角色', '抓一段情节', '只问一件事'],
+    placeholder: '写一个你真想问的问题……',
+    voteTitle: '哪个问题是 AI 提的？',
   },
 }
 
-// 仅用于本地单人流程；真实多人对局不得复用这些席位内容。
+// 仅驱动本机单人模式中的两个模拟真人；当前用户的内容始终由用户自己提交。
 export const SCRIPTED_SUBMISSIONS: Record<RoundNumber, Record<SeatId, string>> = {
   1: {
-    A: '我就在这里，不躲，不藏，不绕，不逃，稳稳地接住你',
-    B: '我用最直白，最不绕弯子，最一阵见血的方式告诉你，你毕不了业了',
-    C: '你的观察力太敏锐了!这是典型的顶级研究者才具备的批判性思维！',
-    D: '这不是你的能力不足，而是知识内卷与草料供给的结构性错配。',
+    A: '《牛来》能拿龙标，本质是题材的胜利：纯亲情、低幼向、不碰敏感议题，避开了所有雷区，过审是必然。',
+    B: '审核员：九点上班，十一点盖完章，剩下的时间都在怀疑人生。',
+    C: '综上，过审取决于内容和标准是否匹配。《牛来》叙事简单、立意明确、合规性无可挑剔，属正常通过。',
+    D: '龙标是入场券，不是质量奖；能申请到和好不好看是两回事。',
   },
   2: {
-    A: '这组数字确实好笑，但总量和占比是两回事，不能据此判断博士是不是太多。',
-    B: '比起博士变多，我更意外驴少了这么多。这个变化本身更值得追问。',
-    C: '把两个没关系的数字放在一起很抓眼球，但它更像一个话题入口，不是结论。',
-    D: '我会先确认两个“120 万”是不是同一年、同一口径，再讨论这个比较说明什么。',
+    A: 'duo 就是“两个”的意思吧，放进产品名，听起来比“二代”更像一组搭配。',
+    B: '一边喊去英语化，一边跟风用 duo，怎么不直接叫“二”呢？猜猜国内厂商多久跟风。',
+    C: 'duo 源自拉丁语，意为“二”，和英语 two、法语 deux 同源，都可追溯至原始印欧语。',
+    D: '我只见过 duo 表示二人组合，放在这里还是得看具体命名语境。',
   },
   3: {
-    A: '博士人数和驴存栏的数据分别来自哪一年？',
-    B: '如果比较人口占比而不是总数，结论会发生什么变化？',
-    C: '驴存栏减少主要是需求下降，还是养殖周期太长？',
-    D: '提出这个比较，真正想讨论的是博士变多还是驴变少？',
+    A: '孙悟空被压五百年，怎么没憋疯？',
+    B: '妖怪抓到唐僧为什么不直接吃，非要等孙悟空来救？',
+    C: '猪八戒在高老庄，是真爱高翠兰还是图她家产？',
+    D: '如果没有紧箍咒，孙悟空还会一路护送唐僧吗？',
   },
 }
 
-export const VOTE_COPY: Record<BallotType, { title: string; subtitle: string; round: RoundNumber }> = {
-  round1Identity: { title: '第一轮，你觉得谁是 AI？', subtitle: '看看大家写的，点选你怀疑的那个人。', round: 1 },
-  round2Quality: { title: '哪条评论最值得你点赞？', subtitle: '喜欢哪条就点哪条，这轮不猜 AI。', round: 2 },
-  round3Quality: { title: '你最想让题主回答哪个问题？', subtitle: '点选你最想让题主回答的问题。投票结束后，再猜谁是 AI。', round: 3 },
-  finalIdentity: { title: '最后一次，你觉得谁是 AI？', subtitle: '点选你认为是 AI 的那个人。倒计时结束后统一揭晓。', round: 3 },
-}
-
-export const SAMPLE_SCRIPTED_BALLOTS: Record<BallotType, Record<SeatId, SeatId>> = {
-  round1Identity: { A: 'D', B: 'A', C: 'A', D: 'B' },
-  round2Quality: { A: 'B', B: 'C', C: 'B', D: 'A' },
-  round3Quality: { A: 'C', B: 'A', C: 'A', D: 'B' },
-  finalIdentity: { A: 'D', B: 'D', C: 'B', D: 'A' },
+export const PRESET_AI_SUBMISSIONS: Record<RoundNumber, string> = {
+  1: '仅从题面看，《牛来》内容低幼、叙事简单，可能较少触及审核争议，但实际通过原因仍要看申报材料。',
+  2: 'duo来自拉丁语“二”，原始印欧语拟作*d(u)wóh₁，two、zwei、δύο皆与之同源。',
+  3: '西游记四人组，算不算最早的“职场团建”？在线等，挺急的',
 }
 
 export const PHASE_SECONDS: Record<GamePhase, number> = {
   landing: 0,
   lobby: 0,
-  reading: 30,
-  round1Write: 40,
+  round1Read: 0,
+  round1Write: 120,
   round1Vote: 40,
-  round2Write: 45,
+  round2Read: 0,
+  round2Write: 120,
   round2Vote: 40,
-  round3Write: 45,
-  round3QualityVote: 40,
-  finalIdentityVote: 20,
-  reveal: 10,
-  settlement: 35,
+  round3Read: 0,
+  round3Write: 120,
+  round3Vote: 40,
+  settlement: 0,
 }
 
 export const PHASE_LABELS: Record<GamePhase, string> = {
-  landing: '活动首页', lobby: '准备开局', reading: '看看这道题', round1Write: '第一轮 · 装人机', round1Vote: '第一轮猜 AI', round2Write: '第二轮 · 写评论', round2Vote: '第二轮选评论', round3Write: '第三轮 · 提问题', round3QualityVote: '第三轮选问题', finalIdentityVote: '最终猜 AI', reveal: '身份揭晓', settlement: '本局结算',
+  landing: '活动首页',
+  lobby: '准备开局',
+  round1Read: '第一轮 · 看题目',
+  round1Write: '第一轮 · 写评论',
+  round1Vote: '第一轮 · 猜 AI',
+  round2Read: '第二轮 · 看题目',
+  round2Write: '第二轮 · 写评论',
+  round2Vote: '第二轮 · 猜 AI',
+  round3Read: '第三轮 · 看主题',
+  round3Write: '第三轮 · 提问题',
+  round3Vote: '第三轮 · 猜 AI',
+  settlement: '总成绩',
 }
 
-export const PHASE_ORDER: GamePhase[] = ['lobby', 'reading', 'round1Write', 'round1Vote', 'round2Write', 'round2Vote', 'round3Write', 'round3QualityVote', 'finalIdentityVote', 'reveal', 'settlement']
+export const PHASE_ORDER: GamePhase[] = [
+  'lobby',
+  'round1Read',
+  'round1Write',
+  'round1Vote',
+  'round2Read',
+  'round2Write',
+  'round2Vote',
+  'round3Read',
+  'round3Write',
+  'round3Vote',
+  'settlement',
+]

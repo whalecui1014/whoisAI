@@ -12,6 +12,11 @@ describe('visible-character validation', () => {
     expect(fiftyOne).toHaveLength(51)
   })
 
+  it('applies the third-round 30-character limit independently', () => {
+    expect(validateSubmission('问'.repeat(30), 30)).toBeNull()
+    expect(validateSubmission('问'.repeat(31), 30)).toContain('超过 30')
+  })
+
   it('rejects whitespace-only input', () => {
     expect(validateSubmission('  \n\t')).toContain('先写点什么')
   })
