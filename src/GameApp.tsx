@@ -8,7 +8,7 @@ import { generateGameContent } from './game/ai'
 import { countVisibleCharacters, validateSubmission } from './game/graphemes'
 import { completeBallots, contentForAuthor, gameReducer } from './game/machine'
 import { localVoteService } from './game/mockService'
-import { achievementsFor, calculateScores, humanSeats } from './game/scoring'
+import { achievementsFor, calculateRoundScores, calculateScores, humanSeats } from './game/scoring'
 import { loadGame, saveGame } from './game/storage'
 import type { ContentId, GamePhase, GameState, RoundNumber, SeatId } from './game/types'
 
@@ -24,15 +24,15 @@ function RulesModal({ onClose }: { onClose: () => void }) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
     <section className="rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title">
       <button className="modal-close" onClick={onClose} aria-label="关闭规则"><X size={20} /></button>
-      <span className="eyebrow">约 9 分钟 · 3 位真人，1 个 AI</span>
-      <h2 id="rules-title">三轮，都来猜 AI</h2>
+      <span className="eyebrow">约 9 分钟 · 3 位真人玩家，1 个 AI “卧底”</span>
+      <h2 id="rules-title">三轮游戏，你将与AI同时答题，你的唯一目标就是让自己被更多人当成AI</h2>
       <ol className="rule-steps">
-        <li><strong>1</strong><div><b>评论《牛来》</b><span>可以装得像 AI，也可以顺着题目玩梗；写完猜一次。</span></div></li>
-        <li><strong>2</strong><div><b>聊聊 duo</b><span>解释、评论或质疑都可以；内容重新打乱，再猜一次。</span></div></li>
-        <li><strong>3</strong><div><b>围绕 #西游记 提问</b><span>只问一个问题；最后再从四个问题里找出 AI。</span></div></li>
+        <li><strong>1</strong><div><b>写知乎“高能”评论</b><span>你可以故意 “AI味”，也可以顺着题目玩梗；所有人写完后，投出你心中的“AI”卧底。</span></div></li>
+        <li><strong>2</strong><div><b>答知乎专业问题</b><span>你将对一个知乎上的专业领域问题概念做解释；所有人写完后，投出你心中的“AI”卧底。</span></div></li>
+        <li><strong>3</strong><div><b>围绕 #特定话题 提问</b><span>你将围绕给定tag设计一个问题；所有人写完后，投出你心中的“AI”卧底。</span></div></li>
       </ol>
-      <div className="rules-score"><b>每轮最多 5 分，整局满分 15 分</b><span>猜中 AI +2 分；被误认票数最高的真人 +3 分。若正票并列最高，并列者都得 +3 分；没人被误认则不发这 3 分。</span></div>
-      <p className="muted-copy">三轮写作各 120 秒；前两轮最多 50 字，第三轮最多 30 字。每轮只投一票，不能投自己，投出后不能改。</p>
+      <div className="rules-score"><b>整局游戏得分最高者获胜，成为“最佳入机”</b><span>猜中 AI +2 分；被误认票数最高的真人 +3 分。若正票并列最高，并列者都 +3 分。</span></div>
+      <p className="muted-copy">三轮写作各 120 秒；前两轮最多 50 字，第三轮最多 30 字。每轮只投一票，不能投自己，投出后不能修改。</p>
       <PrimaryButton onClick={onClose}>知道了</PrimaryButton>
     </section>
   </div>
@@ -78,10 +78,10 @@ function GamePage({ state, children, sidebar }: { state: GameState; children: Re
 }
 
 function Lobby({ state, onReady, onRetry }: { state: GameState; onReady: () => void; onRetry: () => void }) {
-  return <GamePage state={state} sidebar={<><aside className="side-card"><span className="side-kicker">本局流程</span><p>每轮先读题，再用 120 秒作答、40 秒从四条匿名内容里找 AI。</p><p>前两轮投票后直接进入下一轮，三轮结束后一起揭晓。</p></aside><aside className="side-card"><span className="side-kicker">匿名规则</span><p>衣服和席位整局不变，但每轮内容编号都会重新打乱。</p></aside></>}>
+  return <GamePage state={state} sidebar={<><aside className="side-card"><span className="side-kicker">本局流程</span><p>每轮先读题，再用 120 秒作答、40 秒从四条匿名评论里投出你心目中的 “AI”。</p><p>第一、二轮投票后进入下一轮，三轮结束后一起揭晓。</p></aside><aside className="side-card"><span className="side-kicker">匿名规则</span><p>衣服和席位整局不变，但每轮内容编号都会重新打乱。</p></aside></>}>
     <section className="content-card lobby-card" data-screen="lobby">
       <span className="eyebrow">开局前</span><h1>认一下你的角色</h1>
-      <p className="lead">记住你的字母和衣服。这局里，你一直是 {state.userSeat}。</p>
+      <p className="lead">记住你的字母和衣服。本局游戏中，你将一直是 {state.userSeat}。</p>
       <CharacterGrid state={state} large />
       <div className="lobby-actions">
         {state.aiContentStatus === 'error' && <p className="lobby-error" role="alert">内容暂时无法载入，请重试。</p>}
@@ -115,7 +115,7 @@ function RoundHeader({ round, secondsLeft }: { round: RoundNumber; secondsLeft: 
   const topic = ROUND_TOPICS[round]
   const taskTitle = round === 3 ? '提出一个问题' : '写下你的评论'
   const taskDescription = round === 3
-    ? '选一个你真想知道的点，一次问清一件事。'
+    ? '“AI”看山卧底会提一个什么问题呢/思考中……'
     : topic.task
   const minutes = Math.floor(secondsLeft / 60)
   const seconds = String(secondsLeft % 60).padStart(2, '0')
@@ -206,12 +206,12 @@ function VoteScreen({ state, round, dispatch }: { state: GameState; round: Round
             <p>{state.submissions[round][slot.authorSeat]}</p>
             {isSelf && <span className="self-chip">你写的 · 不能投自己</span>}
             {isSelected && <span className="vote-chip">已投</span>}
-            {isPending && <span className="vote-chip pending">正在投票…</span>}
+            {isPending && <span className="vote-chip pending">正在投票……</span>}
           </button>
         })}
       </div>
       {lockedTarget && <div className="vote-status success"><Check size={17} /><div><strong>你投给了 {CONTENT_LABELS[lockedTarget]}。</strong><span>{round < 3 ? '投好了，倒计时结束后进入下一轮；你仍可以继续看内容。' : '投好了，倒计时结束后三轮一起揭晓；你仍可以继续看内容。'}</span></div></div>}
-      {!lockedTarget && pendingTarget && <div className="vote-status"><Clock3 size={17} /><span>正在投票…</span></div>}
+      {!lockedTarget && pendingTarget && <div className="vote-status"><Clock3 size={17} /><span>正在投票……</span></div>}
       {!lockedTarget && voteError && <div className="vote-status error" role="alert"><Info size={17} /><span>{voteError}</span></div>}
     </section>
   </GamePage>
@@ -227,7 +227,7 @@ function receivedVotes(state: GameState, round: RoundNumber, seat: SeatId): numb
 function FinalRevealPanel({ state }: { state: GameState }) {
   return <section className="content-card final-reveal-card" data-screen="final-reveal">
     <div className="final-reveal-lead">
-      <div><span className="eyebrow">最终揭晓</span><h1>{state.aiSeat} 是本局 AI</h1><p>三轮答案现在一起公开。每轮的匿名编号都不一样。</p></div>
+      <div><span className="eyebrow">最终揭晓</span><h1>{state.aiSeat} 是本局 “AI”看山卧底</h1><p>三轮答案现在一起公开。每轮的匿名编号都不一样。</p></div>
       <Character seat={state.aiSeat} outfit={state.outfitBySeat[state.aiSeat]} size="large" revealedAi />
     </div>
     <div className="final-round-result-grid">
@@ -235,11 +235,13 @@ function FinalRevealPanel({ state }: { state: GameState }) {
         const aiContentId = contentForAuthor(state.contentSlots[round], state.aiSeat)!
         const userGuess = state.ballots[round][state.userSeat]
         const correct = userGuess === aiContentId
+        const roundScores = calculateRoundScores(round, state.aiSeat, state.ballots, state.contentSlots)
         return <article key={round}>
           <span>第{['一', '二', '三'][round - 1]}轮</span>
           <h2>{CONTENT_LABELS[aiContentId]} 是 AI 写的</h2>
           <p>{state.submissions[round][state.aiSeat]}</p>
-          <strong className={correct ? 'correct' : 'wrong'}>{correct ? '你猜对了 · +2 分' : `你投给了 ${userGuess ? CONTENT_LABELS[userGuess] : '—'} · 未猜中`}</strong>
+          <div className="final-ai-meta"><span>收到 {receivedVotes(state, round, state.aiSeat)} 票</span><b>AI · 不计分</b></div>
+          <div className="final-user-result"><strong className={correct ? 'correct' : 'wrong'}>{correct ? '你猜对了 · +2 分' : `你投给了 ${userGuess ? CONTENT_LABELS[userGuess] : '—'} · 未猜中`}</strong><span>本轮 +{roundScores[state.userSeat].total}</span></div>
         </article>
       })}
     </div>
