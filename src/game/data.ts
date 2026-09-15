@@ -11,11 +11,15 @@ export const CONTENT_LABELS: Record<ContentId, string> = {
   4: '④',
 }
 
+export function publicAssetUrl(path: string): string {
+  return `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
+}
+
 export const OUTFITS: Record<OutfitId, { label: string; src: string; color: string }> = {
-  blue: { label: '蓝色连帽衫', src: '/assets/characters/liukanshan-blue.png', color: '#1772f6' },
-  green: { label: '绿色背带裤', src: '/assets/characters/liukanshan-green.png', color: '#2f855a' },
-  yellow: { label: '黄色针织衫', src: '/assets/characters/liukanshan-yellow.png', color: '#d69e2e' },
-  purple: { label: '紫色运动外套', src: '/assets/characters/liukanshan-purple.png', color: '#7251b5' },
+  blue: { label: '蓝色连帽衫', src: publicAssetUrl('assets/characters/liukanshan-blue.png'), color: '#1772f6' },
+  green: { label: '绿色背带裤', src: publicAssetUrl('assets/characters/liukanshan-green.png'), color: '#2f855a' },
+  yellow: { label: '黄色针织衫', src: publicAssetUrl('assets/characters/liukanshan-yellow.png'), color: '#d69e2e' },
+  purple: { label: '紫色运动外套', src: publicAssetUrl('assets/characters/liukanshan-purple.png'), color: '#7251b5' },
 }
 
 export const LANDING_COPY = {

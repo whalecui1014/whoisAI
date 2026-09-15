@@ -3,7 +3,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { Character } from './components/game/Character'
 import { DemoControls } from './components/game/DemoControls'
 import { GameHeader } from './components/game/GameHeader'
-import { CONTENT_LABELS, LANDING_COPY, PHASE_ORDER, ROUNDS, ROUND_TOPICS, SEATS } from './game/data'
+import { CONTENT_LABELS, LANDING_COPY, PHASE_ORDER, publicAssetUrl, ROUNDS, ROUND_TOPICS, SEATS } from './game/data'
 import { generateGameContent } from './game/ai'
 import { countVisibleCharacters, validateSubmission } from './game/graphemes'
 import { completeBallots, contentForAuthor, gameReducer } from './game/machine'
@@ -163,7 +163,7 @@ function WritingScreen({ state, round, dispatch }: { state: GameState; round: Ro
 }
 
 function AnonymousAvatar({ label }: { label: string }) {
-  return <div className="anonymous-avatar" aria-hidden="true"><img src="/assets/characters/liukanshan-official-reference.png" alt="" /><strong>{label}</strong></div>
+  return <div className="anonymous-avatar" aria-hidden="true"><img src={publicAssetUrl('assets/characters/liukanshan-official-reference.png')} alt="" /><strong>{label}</strong></div>
 }
 
 function VoteScreen({ state, round, dispatch }: { state: GameState; round: RoundNumber; dispatch: React.Dispatch<Parameters<typeof gameReducer>[1]> }) {

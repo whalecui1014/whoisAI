@@ -1,5 +1,5 @@
 import { CircleHelp, RotateCcw, SkipForward } from 'lucide-react'
-import { PHASE_LABELS } from '../../game/data'
+import { PHASE_LABELS, publicAssetUrl } from '../../game/data'
 import type { GamePhase } from '../../game/types'
 
 interface GameHeaderProps {
@@ -15,7 +15,7 @@ export function GameHeader({ phase, seconds, onRules, onReset, onTestNext }: Gam
     <header className="game-header">
       <div className="game-header-inner">
         <div className="brand-group">
-          <img src="/assets/zhihu-logo.png" alt="知乎" />
+          <img src={publicAssetUrl('assets/zhihu-logo.png')} alt="知乎" />
           <i />
           <strong>谁是人机</strong>
           <span className="event-pill">知乎活动</span>
